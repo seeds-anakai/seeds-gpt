@@ -2,7 +2,7 @@
 import { createApp } from 'vue';
 
 // Quasar
-import { useQuasar } from '@/plugins/quasar';
+import { Quasar, iconSet } from '@/plugins/quasar';
 
 // App
 import App from '@/App.vue';
@@ -11,7 +11,9 @@ import App from '@/App.vue';
 const app = createApp(App);
 
 // use the quasar
-useQuasar(app);
+app.use(Quasar, {
+  iconSet,
+});
 
 // mount the app
 app.mount('#app');

@@ -1,18 +1,8 @@
-// Vue.js
-import { App } from 'vue';
-
 // Quasar
-import { Quasar } from 'quasar';
+export { Quasar } from 'quasar';
 
 // Quasar - Icon Set
-import iconSet from 'quasar/icon-set/mdi-v7';
+export { default as iconSet } from 'quasar/icon-set/mdi-v7';
 
 // Quasar - Styles
 import 'quasar/src/css/index.sass';
-
-// use the quasar
-export const useQuasar = (app: App) => {
-  app.use(Quasar, {
-    iconSet,
-  });
-};
