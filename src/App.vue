@@ -100,7 +100,9 @@ const sendMessage = () => {
                     </q-avatar>
                   </template>
                   <template #default v-if="isLoading">
-                    <q-spinner-dots size="32px" />
+                    <div class="flex justify-center">
+                      <q-spinner-dots size="32px" />
+                    </div>
                   </template>
                 </q-chat-message>
               </template>
