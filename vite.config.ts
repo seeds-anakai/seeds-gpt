@@ -17,7 +17,7 @@ export default defineConfig({
       entry: '/src/main.ts',
       inject: {
         data: {
-          title: 'gpt.mallows.io',
+          title: "Quail's GPT",
         },
       },
     }),

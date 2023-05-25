@@ -32,7 +32,7 @@ const messagesWithAttrs = computed(() => messages.value.map(({ isLoading, text, 
       bgColor: 'grey-4',
       icon: 'mdi-robot',
       isLoading,
-      name: 'ChatGPT',
+      name: "Quail's GPT",
       sent: false,
       text,
       textHtml: true,
@@ -73,7 +73,7 @@ const sendMessage = () => {
     <q-header class="bg-grey-9 text-grey-3" elevated>
       <q-toolbar class="q-mx-auto">
         <q-toolbar-title shrink>
-          gpt.mallows.io
+          Quail's GPT
         </q-toolbar-title>
         <q-tabs v-model="tab" stretch>
           <q-tab v-for="(label, name) in tabLabels" :label="label" :name="name" no-caps />
