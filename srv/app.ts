@@ -85,6 +85,35 @@ class QuailsGptStack extends Stack {
       value: api.url,
     });
 
+    // App Storage
+    const appStorage = new s3.Bucket(this, 'AppStorage', {
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      cors: [
+        {
+          maxAge: 86400,
+          allowedHeaders: [
+            '*',
+          ],
+          allowedMethods: [
+            s3.HttpMethods.GET,
+            s3.HttpMethods.PUT,
+            s3.HttpMethods.HEAD,
+            s3.HttpMethods.POST,
+            s3.HttpMethods.DELETE,
+          ],
+          allowedOrigins: [
+            '*',
+          ],
+        },
+      ],
+    });
+
+    // Add environment variable for access App Storage.
+    apiHandler.addEnvironment('APP_STORAGE_BUCKET_NAME', appStorage.bucketName);
+
+    // Add permissions to access App Storage.
+    appStorage.grantReadWrite(apiHandler);
+
     // App Bucket
     const appBucket = new s3.Bucket(this, 'AppBucket', {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,

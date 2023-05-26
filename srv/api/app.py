@@ -1,3 +1,5 @@
+import os
+
 from aws_lambda_powertools.event_handler import (
     APIGatewayRestResolver,
     CORSConfig,
@@ -15,7 +17,7 @@ app = APIGatewayRestResolver(cors=CORSConfig(max_age=86400))
 llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0)
 
 # Deep Lake
-db = DeepLake(dataset_path='/tmp/deeplake', embedding_function=OpenAIEmbeddings())
+db = DeepLake(dataset_path='s3://{}/deeplake'.format(os.environ['APP_STORAGE_BUCKET_NAME']), embedding_function=OpenAIEmbeddings())
 
 # Retriever
 retriever = db.as_retriever()
