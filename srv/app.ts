@@ -1,12 +1,15 @@
 // AWS CDK
 import {
   App,
+  CfnOutput,
   Duration,
   Stack,
   StackProps,
+  aws_apigateway as apigateway,
   aws_cloudfront as cloudfront,
   aws_cloudfront_origins as origins,
   aws_iam as iam,
+  aws_lambda as lambda,
   aws_s3 as s3,
 } from 'aws-cdk-lib';
 
@@ -28,6 +31,53 @@ class QuailsGptStack extends Stack {
    */
   constructor(scope?: Construct, id?: string, props?: StackProps) {
     super(scope, id, props);
+
+    // Api Handler
+    const apiHandler = new lambda.DockerImageFunction(this, 'ApiHandler', {
+      code: lambda.DockerImageCode.fromImageAsset('srv/api'),
+      architecture: lambda.Architecture.ARM_64,
+      timeout: Duration.seconds(30),
+      memorySize: 1769, // 1 vCPU
+    });
+
+    // Api
+    const api = new apigateway.LambdaRestApi(this, 'Api', {
+      handler: apiHandler,
+      deployOptions: {
+        stageName: 'v1',
+      },
+      restApiName: "Quail's GPT API",
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowHeaders: apigateway.Cors.DEFAULT_HEADERS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        maxAge: Duration.days(1),
+      },
+    });
+
+    // Add the Gateway Response when the status code is 4XX.
+    api.addGatewayResponse('GatewayResponseDefault4XX', {
+      type: apigateway.ResponseType.DEFAULT_4XX,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+      },
+    });
+
+    // Add the Gateway Response when the status code is 5XX.
+    api.addGatewayResponse('GatewayResponseDefault5XX', {
+      type: apigateway.ResponseType.DEFAULT_5XX,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+      },
+    });
+
+    // Remove the default endpoint output.
+    api.node.tryRemoveChild('Endpoint');
+
+    // Api Endpoint
+    new CfnOutput(this, 'ApiEndpoint', {
+      value: api.url,
+    });
 
     // App Bucket
     const appBucket = new s3.Bucket(this, 'AppBucket', {

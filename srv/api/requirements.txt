@@ -1,0 +1,6 @@
+aws-lambda-powertools
+deeplake
+langchain
+openai
+pypdf
+tiktoken
