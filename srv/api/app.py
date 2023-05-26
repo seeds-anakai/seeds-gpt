@@ -1,9 +1,6 @@
 import os
 
-from aws_lambda_powertools.event_handler import (
-    APIGatewayRestResolver,
-    CORSConfig,
-)
+from aws_lambda_powertools.event_handler import APIGatewayRestResolver, CORSConfig
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
@@ -14,10 +11,13 @@ from langchain.vectorstores import DeepLake
 app = APIGatewayRestResolver(cors=CORSConfig(max_age=86400))
 
 # LLM
-llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0)
+llm = ChatOpenAI(temperature=0, max_tokens=200)
+
+# Embeddings
+embeddings = OpenAIEmbeddings()
 
 # Deep Lake
-db = DeepLake(dataset_path='s3://{}/deeplake'.format(os.environ['APP_STORAGE_BUCKET_NAME']), embedding_function=OpenAIEmbeddings())
+db = DeepLake(dataset_path='s3://{}/deeplake'.format(os.environ['APP_STORAGE_BUCKET_NAME']), embedding_function=embeddings, read_only=True)
 
 # Retriever
 retriever = db.as_retriever()
