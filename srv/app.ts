@@ -32,12 +32,18 @@ class QuailsGptStack extends Stack {
   constructor(scope?: Construct, id?: string, props?: StackProps) {
     super(scope, id, props);
 
+    // OpenAI Api Key
+    const openaiApiKey = this.node.tryGetContext('openaiApiKey');
+
     // Api Handler
     const apiHandler = new lambda.DockerImageFunction(this, 'ApiHandler', {
       code: lambda.DockerImageCode.fromImageAsset('srv/api'),
       architecture: lambda.Architecture.ARM_64,
       timeout: Duration.seconds(30),
       memorySize: 1769, // 1 vCPU
+      environment: {
+        OPENAI_API_KEY: openaiApiKey,
+      },
     });
 
     // Api
