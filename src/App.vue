@@ -48,11 +48,11 @@ const loadingMessage = computed(() => messages.value.find(({ isLoading }) => isL
 const message = ref('');
 
 // send message
-const sendMessage = () => {
+const sendMessage = async (text: string) => {
   // my message
   messages.value.push({
     type: 'sent',
-    text: message.value,
+    text,
     isLoading: false,
   });
 
@@ -65,6 +65,35 @@ const sendMessage = () => {
 
   // reset message
   message.value = '';
+
+  // send message
+  const { body } = await fetch(import.meta.env.VITE_CHAT_FUNCTION_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: text,
+    }),
+  });
+
+  if (body === null) {
+    return;
+  }
+
+  // reader
+  const reader = body.pipeThrough(new TextDecoderStream()).getReader();
+
+  // receive message
+  while (loadingMessage.value?.isLoading) {
+    const result = await reader.read();
+
+    if (!result.done) {
+      loadingMessage.value.text += result.value;
+    } else {
+      loadingMessage.value.isLoading = false;
+    }
+  }
 };
 </script>
 
@@ -99,7 +128,7 @@ const sendMessage = () => {
                       <q-icon :name="icon" size="48px" />
                     </q-avatar>
                   </template>
-                  <template #default v-if="isLoading">
+                  <template #default v-if="isLoading && text.length === 0">
                     <div class="flex justify-center">
                       <q-spinner-dots size="32px" />
                     </div>
@@ -109,7 +138,7 @@ const sendMessage = () => {
             </q-card>
             <q-input v-model="message" class="fixed-bottom q-mx-auto q-my-md" dense placeholder="Send a message...">
               <template #append>
-                <q-btn :disable="!/\S/.test(message) || !!loadingMessage" flat round @click="sendMessage">
+                <q-btn :disable="!/\S/.test(message) || !!loadingMessage" flat round @click="sendMessage(message)">
                   <q-icon name="mdi-send" />
                 </q-btn>
               </template>

@@ -5,11 +5,11 @@ import {
   Duration,
   Stack,
   StackProps,
-  aws_apigateway as apigateway,
   aws_cloudfront as cloudfront,
   aws_cloudfront_origins as origins,
   aws_iam as iam,
   aws_lambda as lambda,
+  aws_lambda_nodejs as nodejs,
   aws_s3 as s3,
 } from 'aws-cdk-lib';
 
@@ -32,87 +32,42 @@ class QuailsGptStack extends Stack {
   constructor(scope?: Construct, id?: string, props?: StackProps) {
     super(scope, id, props);
 
-    // OpenAI Api Key
-    const openaiApiKey = this.node.tryGetContext('openaiApiKey');
+    // OpenAI API Key
+    const openaiApiKey = this.node.getContext('openaiApiKey');
 
-    // Api Handler
-    const apiHandler = new lambda.DockerImageFunction(this, 'ApiHandler', {
-      code: lambda.DockerImageCode.fromImageAsset('srv/api'),
+    // Chat Function
+    const chatFunction = new nodejs.NodejsFunction(this, 'ChatFunction', {
       architecture: lambda.Architecture.ARM_64,
-      timeout: Duration.seconds(30),
-      memorySize: 1769, // 1 vCPU
+      runtime: lambda.Runtime.NODEJS_18_X,
+      timeout: Duration.minutes(15),
       environment: {
         OPENAI_API_KEY: openaiApiKey,
       },
-    });
-
-    // Api
-    const api = new apigateway.LambdaRestApi(this, 'Api', {
-      handler: apiHandler,
-      deployOptions: {
-        stageName: 'v1',
-      },
-      restApiName: "Quail's GPT API",
-      defaultCorsPreflightOptions: {
-        allowOrigins: apigateway.Cors.ALL_ORIGINS,
-        allowHeaders: apigateway.Cors.DEFAULT_HEADERS,
-        allowMethods: apigateway.Cors.ALL_METHODS,
-        maxAge: Duration.days(1),
+      bundling: {
+        minify: true,
       },
     });
 
-    // Add the Gateway Response when the status code is 4XX.
-    api.addGatewayResponse('GatewayResponseDefault4XX', {
-      type: apigateway.ResponseType.DEFAULT_4XX,
-      responseHeaders: {
-        'Access-Control-Allow-Origin': "'*'",
+    // Add url to Chat Function.
+    const chatFunctionUrl = chatFunction.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+      cors: {
+        allowedHeaders: [
+          '*',
+        ],
+        allowedOrigins: [
+          '*',
+        ],
       },
     });
 
-    // Add the Gateway Response when the status code is 5XX.
-    api.addGatewayResponse('GatewayResponseDefault5XX', {
-      type: apigateway.ResponseType.DEFAULT_5XX,
-      responseHeaders: {
-        'Access-Control-Allow-Origin': "'*'",
-      },
+    // Change invoke mode to RESPONSE_STREAM.
+    (chatFunctionUrl.node.defaultChild as lambda.CfnUrl).invokeMode = 'RESPONSE_STREAM';
+
+    // Chat Function URL
+    new CfnOutput(this, 'ChatFunctionUrl', {
+      value: chatFunctionUrl.url,
     });
-
-    // Remove the default endpoint output.
-    api.node.tryRemoveChild('Endpoint');
-
-    // Api Endpoint
-    new CfnOutput(this, 'ApiEndpoint', {
-      value: api.url,
-    });
-
-    // App Storage
-    const appStorage = new s3.Bucket(this, 'AppStorage', {
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      cors: [
-        {
-          maxAge: 86400,
-          allowedHeaders: [
-            '*',
-          ],
-          allowedMethods: [
-            s3.HttpMethods.GET,
-            s3.HttpMethods.PUT,
-            s3.HttpMethods.HEAD,
-            s3.HttpMethods.POST,
-            s3.HttpMethods.DELETE,
-          ],
-          allowedOrigins: [
-            '*',
-          ],
-        },
-      ],
-    });
-
-    // Add environment variable for access App Storage.
-    apiHandler.addEnvironment('APP_STORAGE_BUCKET_NAME', appStorage.bucketName);
-
-    // Add permissions to access App Storage.
-    appStorage.grantReadWrite(apiHandler);
 
     // App Bucket
     const appBucket = new s3.Bucket(this, 'AppBucket', {
