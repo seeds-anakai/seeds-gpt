@@ -4,6 +4,7 @@
     "serve": "vite serve"
   },
   "devDependencies": {
+    "@quasar/quasar-ui-qmarkdown": "^2.0.0-beta.10",
     "@quasar/vite-plugin": "^1.3.3",
     "@types/aws-lambda": "^8.10.115",
     "@types/node": "^20.2.5",

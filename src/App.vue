@@ -24,7 +24,6 @@ const messagesWithAttrs = computed(() => messages.value.map(({ isLoading, text, 
       name: 'Me',
       sent: true,
       text,
-      textHtml: false,
       type,
     };
   } else {
@@ -35,7 +34,6 @@ const messagesWithAttrs = computed(() => messages.value.map(({ isLoading, text, 
       name: "Quail's GPT",
       sent: false,
       text,
-      textHtml: true,
       type,
     };
   }
@@ -121,8 +119,8 @@ const sendMessage = async (text: string) => {
               <div class="text-h5">
                 {{ tabLabels[tab] }}
               </div>
-              <template v-for="{ bgColor, icon, isLoading, name, sent, text, textHtml, type } in messagesWithAttrs">
-                <q-chat-message :bg-color="bgColor" :name="name" :sent="sent" :text="[text]" :text-html="textHtml">
+              <template v-for="{ bgColor, icon, isLoading, name, sent, text, type } in messagesWithAttrs">
+                <q-chat-message :bg-color="bgColor" :name="name" :sent="sent" :text="[text]">
                   <template #avatar>
                     <q-avatar :class="`q-message-avatar q-message-avatar--${type}`">
                       <q-icon :name="icon" size="48px" />
@@ -132,6 +130,9 @@ const sendMessage = async (text: string) => {
                     <div class="flex justify-center">
                       <q-spinner-dots size="32px" />
                     </div>
+                  </template>
+                  <template #default v-else-if="type === 'received'">
+                    <q-markdown no-html :src="text" />
                   </template>
                 </q-chat-message>
               </template>
@@ -172,5 +173,10 @@ const sendMessage = async (text: string) => {
 
 .q-message:last-child {
   margin-bottom: 48px;
+}
+
+.q-markdown {
+  line-height: 1.5;
+  word-break: normal;
 }
 </style>

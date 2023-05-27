@@ -2,7 +2,7 @@
 import { createApp } from 'vue';
 
 // Quasar
-import { Quasar, iconSet } from '@/plugins/quasar';
+import { Quasar, iconSet, QMarkdown } from '@/plugins/quasar';
 
 // App
 import App from '@/App.vue';
@@ -14,6 +14,9 @@ const app = createApp(App);
 app.use(Quasar, {
   iconSet,
 });
+
+// add the qmarkdown component
+app.component('QMarkdown', QMarkdown);
 
 // mount the app
 app.mount('#app');
