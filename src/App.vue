@@ -146,7 +146,8 @@ const resize = (size: { width: number, height: number }) => {
               </template>
               <q-resize-observer debounce="0" @resize="resize" />
             </q-card>
-            <q-input v-model="message" class="fixed-bottom q-mx-auto q-pa-md" dense placeholder="Send a message...">
+            <q-input v-model="message" class="fixed-bottom q-mx-auto q-pa-md" dense placeholder="Send a message..."
+              @keydown="$event.keyCode === 13 && !(!/\S/.test(message) || !!loadingMessage) && sendMessage(message)">
               <template #append>
                 <q-btn :disable="!/\S/.test(message) || !!loadingMessage" flat round @click="sendMessage(message)">
                   <q-icon name="mdi-send" />
