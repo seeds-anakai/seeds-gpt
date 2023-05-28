@@ -137,7 +137,7 @@ const sendMessage = async (text: string) => {
                 </q-chat-message>
               </template>
             </q-card>
-            <q-input v-model="message" class="fixed-bottom q-mx-auto q-my-md" dense placeholder="Send a message...">
+            <q-input v-model="message" class="fixed-bottom q-mx-auto q-pa-md" dense placeholder="Send a message...">
               <template #append>
                 <q-btn :disable="!/\S/.test(message) || !!loadingMessage" flat round @click="sendMessage(message)">
                   <q-icon name="mdi-send" />
