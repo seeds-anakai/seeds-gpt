@@ -5,11 +5,14 @@ import {
   Duration,
   Stack,
   StackProps,
+  aws_certificatemanager as acm,
   aws_cloudfront as cloudfront,
   aws_cloudfront_origins as origins,
   aws_iam as iam,
   aws_lambda as lambda,
   aws_lambda_nodejs as nodejs,
+  aws_route53 as route53,
+  aws_route53_targets as targets,
   aws_s3 as s3,
 } from 'aws-cdk-lib';
 
@@ -32,8 +35,20 @@ class QuailsGptStack extends Stack {
   constructor(scope?: Construct, id?: string, props?: StackProps) {
     super(scope, id, props);
 
-    // OpenAI API Key
-    const openaiApiKey = this.node.getContext('openaiApiKey');
+    // Context Values
+    const [domainName, certificateArn, openaiApiKey] = [
+      this.node.getContext('domainName'),
+      this.node.getContext('certificateArn'),
+      this.node.getContext('openaiApiKey'),
+    ];
+
+    // Hosted Zone
+    const hostedZone = route53.HostedZone.fromLookup(this, 'HostedZone', {
+      domainName,
+    });
+
+    // Certificate
+    const certificate = acm.Certificate.fromCertificateArn(this, 'Certificate', certificateArn);
 
     // Chat Function
     const chatFunction = new nodejs.NodejsFunction(this, 'ChatFunction', {
@@ -93,14 +108,18 @@ class QuailsGptStack extends Stack {
     }));
 
     // App Distribution
-    new cloudfront.Distribution(this, 'AppDistribution', {
+    const appDistribution = new cloudfront.Distribution(this, 'AppDistribution', {
       defaultBehavior: {
         origin: new origins.S3Origin(appBucket, {
           originAccessIdentity,
         }),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
       },
+      certificate,
       defaultRootObject: 'index.html',
+      domainNames: [
+        `gpt.${domainName}`,
+      ],
       errorResponses: [
         {
           ttl: Duration.days(1),
@@ -116,10 +135,23 @@ class QuailsGptStack extends Stack {
         },
       ],
     });
+
+    // App Distribution Alias Record
+    new route53.ARecord(this, 'AppDistributionAliasRecord', {
+      zone: hostedZone,
+      recordName: 'gpt',
+      target: route53.RecordTarget.fromAlias(
+        new targets.CloudFrontTarget(
+          appDistribution,
+        ),
+      ),
+    });
   }
 }
 
 const app = new App();
 new QuailsGptStack(app, 'QuailsGpt', {
-  env: { region: 'ap-northeast-1' },
+  env: Object.fromEntries(['account', 'region'].map((key) => [
+    key, process.env[`CDK_DEFAULT_${key.toUpperCase()}`],
+  ])),
 });
