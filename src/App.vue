@@ -2,6 +2,9 @@
 // Vue.js
 import { computed, ref } from 'vue';
 
+// Quasar
+import { scroll } from 'quasar';
+
 // tab labels
 const tabLabels = Object.fromEntries(['Home', 'Settings'].map((label) => [
   label.toLowerCase(),
@@ -93,6 +96,11 @@ const sendMessage = async (text: string) => {
     }
   }
 };
+
+// resize
+const resize = (size: { width: number, height: number }) => {
+  scroll.setVerticalScrollPosition(window, size.height);
+};
 </script>
 
 <template>
@@ -136,6 +144,7 @@ const sendMessage = async (text: string) => {
                   </template>
                 </q-chat-message>
               </template>
+              <q-resize-observer debounce="0" @resize="resize" />
             </q-card>
             <q-input v-model="message" class="fixed-bottom q-mx-auto q-pa-md" dense placeholder="Send a message...">
               <template #append>
