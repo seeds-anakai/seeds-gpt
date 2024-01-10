@@ -5,7 +5,7 @@ import { createApp } from 'vue';
 import { Quasar, QMarkdown, iconSet } from '@/plugins/quasar';
 
 // App
-import App from '@/App.vue';
+import App from '@/app.vue';
 
 // create the root component
 const app = createApp(App);
