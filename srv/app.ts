@@ -37,10 +37,12 @@ class MallowsGptStack extends Stack {
     super(scope, id, props);
 
     // Context Values
-    const [domainName, certificateArn, openaiApiKey] = [
+    const [domainName, certificateArn, openaiApiKey, githubRepository, githubRef] = [
       this.node.getContext('domainName'),
       this.node.getContext('certificateArn'),
       this.node.getContext('openaiApiKey'),
+      this.node.tryGetContext('githubRepository'),
+      this.node.tryGetContext('githubRef'),
     ];
 
     // Api
@@ -96,6 +98,11 @@ class MallowsGptStack extends Stack {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
 
+    // App Bucket Name
+    new CfnOutput(this, 'AppBucketName', {
+      value: appBucket.bucketName,
+    });
+
     // Certificate
     const certificate = acm.Certificate.fromCertificateArn(this, 'Certificate', certificateArn);
 
@@ -126,6 +133,11 @@ class MallowsGptStack extends Stack {
           responsePagePath: '/',
         },
       ],
+    });
+
+    // App Distribution ID
+    new CfnOutput(this, 'AppDistributionId', {
+      value: appDistribution.distributionId,
     });
 
     // Origin Access Control
@@ -190,6 +202,44 @@ class MallowsGptStack extends Stack {
       recordName: 'gpt',
       target,
     });
+
+    // If the GitHub repository name and ref of the branch exists, create a role to cdk deploy from GitHub.
+    if (githubRepository && githubRef) {
+      // GitHub OpenID Connect Provider
+      const githubOpenIdConnectProvider = iam.OpenIdConnectProvider.fromOpenIdConnectProviderArn(this, 'GitHubOpenIdConnectProvider', `arn:aws:iam::${this.account}:oidc-provider/token.actions.githubusercontent.com`);
+
+      // GitHub Deploy Role
+      const githubDeployRole = new iam.Role(this, 'GitHubDeployRole', {
+        assumedBy: new iam.WebIdentityPrincipal(githubOpenIdConnectProvider.openIdConnectProviderArn, {
+          'StringEquals': {
+            [`${githubOpenIdConnectProvider.openIdConnectProviderIssuer}:aud`]: 'sts.amazonaws.com',
+          },
+          'StringLike': {
+            [`${githubOpenIdConnectProvider.openIdConnectProviderIssuer}:sub`]: `repo:${githubRepository}:ref:${githubRef}`,
+          },
+        }),
+        inlinePolicies: {
+          GitHubDeployRoleDefaultPolicy: new iam.PolicyDocument({
+            statements: [
+              new iam.PolicyStatement({
+                actions: [
+                  'sts:AssumeRole',
+                ],
+                resources: [
+                  `arn:aws:iam::${this.account}:role/cdk-${this.synthesizer.bootstrapQualifier}-*-role-${this.account}-*`,
+                ],
+              }),
+            ],
+          }),
+        },
+      });
+
+      // Add permissions to access App Bucket.
+      appBucket.grantReadWrite(githubDeployRole);
+
+      // Add permissions to access App Distribution.
+      appDistribution.grantCreateInvalidation(githubDeployRole);
+    }
   }
 }
 
