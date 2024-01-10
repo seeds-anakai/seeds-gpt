@@ -1,3 +1,6 @@
+// Node.js Core Modules
+import { join } from 'path';
+
 // Vite
 import { defineConfig, splitVendorChunkPlugin } from 'vite';
 
@@ -14,7 +17,7 @@ export default defineConfig({
   plugins: [
     splitVendorChunkPlugin(),
     createHtmlPlugin({
-      entry: '/src/main.ts',
+      entry: join(__dirname, 'src', 'main.ts'),
       inject: {
         data: {
           title: 'Mallows GPT',
@@ -33,7 +36,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': '/src',
+      '@': join(__dirname, 'src'),
     },
   },
   build: {
