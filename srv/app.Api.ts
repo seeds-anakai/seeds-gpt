@@ -1,5 +1,14 @@
 // LangChain - Chat Models
-import { ChatOpenAI } from 'langchain/chat_models/openai';
+import { ChatOpenAI } from '@langchain/openai';
+
+// LangChain - Stores
+import { DynamoDBChatMessageHistory } from '@langchain/community/stores/message/dynamodb';
+
+// LangChain - Memory
+import { BufferWindowMemory } from 'langchain/memory';
+
+// LangChain - Chains
+import { ConversationChain } from 'langchain/chains';
 
 // LangChain - Chat OpenAI
 const llm = new ChatOpenAI({
@@ -10,19 +19,37 @@ const llm = new ChatOpenAI({
 });
 
 export const handler = awslambda.streamifyResponse(async (event, responseStream) => {
-  const { message } = JSON.parse(event.body ?? '{}');
+  const { input, sessionId } = JSON.parse(event.body ?? '{}');
 
-  if (message) {
-    await llm.invoke(message, {
-      callbacks: [
-        {
-          handleLLMNewToken(token: string) {
-            responseStream.write(token);
-          },
+  // LangChain - DynamoDB Chat Message History
+  const chatHistory = new DynamoDBChatMessageHistory({
+    tableName: process.env.APP_TABLE_NAME,
+    sessionId,
+    partitionKey: 'id',
+  });
+
+  // LangChain - Buffer Window Memory
+  const memory = new BufferWindowMemory({
+    chatHistory,
+    k: 3,
+  });
+
+  // LangChain - Conversation Chain
+  const chain = new ConversationChain({
+    llm,
+    memory,
+  });
+
+  // Call a chain.
+  await chain.call({ input }, {
+    callbacks: [
+      {
+        handleLLMNewToken(token: string) {
+          responseStream.write(token);
         },
-      ],
-    });
-  }
+      },
+    ],
+  });
 
   responseStream.end();
 });

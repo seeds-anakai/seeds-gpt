@@ -4,6 +4,8 @@
     "serve": "vite serve"
   },
   "devDependencies": {
+    "@langchain/community": "^0.0.16",
+    "@langchain/openai": "^0.0.11",
     "@quasar/quasar-ui-qmarkdown": "^2.0.0-beta.10",
     "@quasar/vite-plugin": "^1.6.0",
     "@types/aws-lambda": "^8.10.131",

@@ -3,7 +3,10 @@
 import { computed, ref } from 'vue';
 
 // Quasar
-import { scroll } from 'quasar';
+import { scroll, uid } from 'quasar';
+
+// session id
+const sessionId = uid();
 
 // messages
 const messages = ref<{ isLoading: boolean, text: string, type: 'sent' | 'received' }[]>([]);
@@ -65,7 +68,8 @@ const sendMessage = async (text: string) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      message: text,
+      input: text,
+      sessionId,
     }),
   });
 
