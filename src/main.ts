@@ -2,7 +2,7 @@
 import { createApp } from 'vue';
 
 // Quasar
-import { Quasar, iconSet, QMarkdown } from '@/plugins/quasar';
+import { Quasar, QMarkdown, iconSet } from '@/plugins/quasar';
 
 // App
 import App from '@/App.vue';

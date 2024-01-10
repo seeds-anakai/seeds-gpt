@@ -1,3 +1,3 @@
-# Quail's GPT
+# Mallows GPT
 
-Quail's GPT is a clone of ChatGPT.
+Mallows GPT is a clone of ChatGPT.

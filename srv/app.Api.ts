@@ -6,19 +6,22 @@ const llm = new ChatOpenAI({
   temperature: 0,
   maxTokens: 1024,
   streaming: true,
+  modelName: 'gpt-4',
 });
 
 export const handler = awslambda.streamifyResponse(async (event, responseStream) => {
-  const params = JSON.parse(event.body ?? '{}');
+  const { message } = JSON.parse(event.body ?? '{}');
 
-  if (params.message) {
-    await llm.predict(params.message, void 0, [
-      {
-        handleLLMNewToken(token: string) {
-          responseStream.write(token);
+  if (message) {
+    await llm.invoke(message, {
+      callbacks: [
+        {
+          handleLLMNewToken(token: string) {
+            responseStream.write(token);
+          },
         },
-      },
-    ]);
+      ],
+    });
   }
 
   responseStream.end();

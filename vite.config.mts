@@ -17,9 +17,10 @@ export default defineConfig({
       entry: '/src/main.ts',
       inject: {
         data: {
-          title: "Quail's GPT",
+          title: 'Mallows GPT',
         },
       },
+      viteNext: true,
     }),
     vue({
       template: {
@@ -38,7 +39,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        assetFileNames: ({ source }) => {
+        assetFileNames({ source }) {
           if (typeof source === 'string') {
             return '[ext]/[hash][extname]';
           }

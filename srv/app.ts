@@ -20,9 +20,9 @@ import {
 import { Construct } from 'constructs';
 
 /**
- * A root construct which represents a single CloudFormation stack.
+ * Mallows GPT Stack Construct
  */
-class QuailsGptStack extends Stack {
+class MallowsGptStack extends Stack {
   /**
    * Creates a new stack.
    *
@@ -42,19 +42,12 @@ class QuailsGptStack extends Stack {
       this.node.getContext('openaiApiKey'),
     ];
 
-    // Hosted Zone
-    const hostedZone = route53.HostedZone.fromLookup(this, 'HostedZone', {
-      domainName,
-    });
-
-    // Certificate
-    const certificate = acm.Certificate.fromCertificateArn(this, 'Certificate', certificateArn);
-
-    // Chat Function
-    const chatFunction = new nodejs.NodejsFunction(this, 'ChatFunction', {
+    // Api
+    const api = new nodejs.NodejsFunction(this, 'Api', {
       architecture: lambda.Architecture.ARM_64,
-      runtime: lambda.Runtime.NODEJS_18_X,
+      runtime: lambda.Runtime.NODEJS_20_X,
       timeout: Duration.minutes(15),
+      memorySize: 1769, // 1 vCPU
       environment: {
         OPENAI_API_KEY: openaiApiKey,
       },
@@ -63,25 +56,23 @@ class QuailsGptStack extends Stack {
       },
     });
 
-    // Add url to Chat Function.
-    const chatFunctionUrl = chatFunction.addFunctionUrl({
+    // Add function url to Api.
+    const { url: apiEndpoint } = api.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
       cors: {
         allowedHeaders: [
           '*',
         ],
         allowedOrigins: [
-          '*',
+          `https://gpt.${domainName}`,
         ],
       },
+      invokeMode: lambda.InvokeMode.RESPONSE_STREAM,
     });
 
-    // Change invoke mode to RESPONSE_STREAM.
-    (chatFunctionUrl.node.defaultChild as lambda.CfnUrl).invokeMode = 'RESPONSE_STREAM';
-
-    // Chat Function URL
-    new CfnOutput(this, 'ChatFunctionUrl', {
-      value: chatFunctionUrl.url,
+    // Api Endpoint
+    new CfnOutput(this, 'ApiEndpoint', {
+      value: apiEndpoint,
     });
 
     // App Bucket
@@ -89,29 +80,14 @@ class QuailsGptStack extends Stack {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
 
-    // Origin Access Identity
-    const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OriginAccessIdentity', {
-      comment: `access-identity-${appBucket.bucketRegionalDomainName}`,
-    });
-
-    // Add the permission to access CloudFront.
-    appBucket.addToResourcePolicy(new iam.PolicyStatement({
-      actions: [
-        's3:GetObject',
-      ],
-      principals: [
-        new iam.CanonicalUserPrincipal(originAccessIdentity.cloudFrontOriginAccessIdentityS3CanonicalUserId),
-      ],
-      resources: [
-        appBucket.arnForObjects('*'),
-      ],
-    }));
+    // Certificate
+    const certificate = acm.Certificate.fromCertificateArn(this, 'Certificate', certificateArn);
 
     // App Distribution
     const appDistribution = new cloudfront.Distribution(this, 'AppDistribution', {
       defaultBehavior: {
         origin: new origins.S3Origin(appBucket, {
-          originAccessIdentity,
+          originPath: '/',
         }),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
       },
@@ -136,22 +112,80 @@ class QuailsGptStack extends Stack {
       ],
     });
 
+    // Origin Access Control
+    const originAccessControl = new cloudfront.CfnOriginAccessControl(this, 'OriginAccessControl', {
+      originAccessControlConfig: {
+        name: 'OriginAccessControlForMallowsGpt',
+        originAccessControlOriginType: 's3',
+        signingBehavior: 'always',
+        signingProtocol: 'sigv4',
+      },
+    });
+
+    // App Distribution L1 Construct
+    const cfnAppDistribution = appDistribution.node.defaultChild as cloudfront.CfnDistribution;
+
+    // Add a origin access control id.
+    cfnAppDistribution.addPropertyOverride('DistributionConfig.Origins.0.OriginAccessControlId', originAccessControl.attrId);
+
+    // Delete a origin access identity in s3 origin config.
+    cfnAppDistribution.addPropertyOverride('DistributionConfig.Origins.0.S3OriginConfig.OriginAccessIdentity', '');
+
+    // Delete a cloud front origin access identity.
+    appDistribution.node.tryRemoveChild('Origin1');
+
+    // Delete the default app bucket policy.
+    appBucket.node.tryRemoveChild('Policy');
+
+    // App Bucket Policy
+    appBucket.policy = new s3.BucketPolicy(appBucket, 'Policy', {
+      bucket: appBucket,
+    });
+
+    // Add the permission to access CloudFront.
+    appBucket.policy.document.addStatements(new iam.PolicyStatement({
+      actions: [
+        's3:GetObject',
+      ],
+      principals: [
+        new iam.ServicePrincipal('cloudfront.amazonaws.com'),
+      ],
+      resources: [
+        appBucket.arnForObjects('*'),
+      ],
+      conditions: {
+        'StringEquals': {
+          'AWS:SourceArn': `arn:aws:cloudfront::${this.account}:distribution/${appDistribution.distributionId}`,
+        },
+      },
+    }));
+
+    // Hosted Zone
+    const zone = route53.HostedZone.fromLookup(this, 'HostedZone', {
+      domainName,
+    });
+
+    // App Distribution Alias Record Target
+    const target = route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(appDistribution));
+
     // App Distribution Alias Record
     new route53.ARecord(this, 'AppDistributionAliasRecord', {
-      zone: hostedZone,
+      zone,
       recordName: 'gpt',
-      target: route53.RecordTarget.fromAlias(
-        new targets.CloudFrontTarget(
-          appDistribution,
-        ),
-      ),
+      target,
     });
   }
 }
 
+// CDK App
 const app = new App();
-new QuailsGptStack(app, 'QuailsGpt', {
-  env: Object.fromEntries(['account', 'region'].map((key) => [
-    key, process.env[`CDK_DEFAULT_${key.toUpperCase()}`],
-  ])),
+
+// AWS Environment
+const env = Object.fromEntries(['account', 'region'].map((key) => {
+  return [key, process.env[`CDK_DEFAULT_${key.toUpperCase()}`]];
+}));
+
+// Mallows GPT Stack
+new MallowsGptStack(app, 'MallowsGpt', {
+  env,
 });
