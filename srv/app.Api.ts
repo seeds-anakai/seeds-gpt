@@ -66,6 +66,7 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
 
   // LangChain - OpenAI Functions Agent Prompt
   const prompt = await pull<ChatPromptTemplate>('hwchase17/openai-functions-agent');
+  console.log({ prompt });
 
   // LangChain - OpenAI Functions Agent
   const agent = await createOpenAIFunctionsAgent({
