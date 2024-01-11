@@ -160,6 +160,14 @@ const resize = (size: { width: number, height: number }) => {
           </template>
           <q-resize-observer debounce="0" @resize="resize" />
         </q-card>
+        <template v-if="messagesWithAttrs.length === 0">
+          <div class="absolute-center full-width text-center text-grey-7">
+            <q-icon name="mdi-atom-variant" size="48px" />
+            <div class="q-my-sm text-h6">
+              How can I help you today?
+            </div>
+          </div>
+        </template>
         <q-input v-model="message" class="fixed-bottom q-mx-auto q-pa-md" dense placeholder="Send a message..." @keydown="$event.keyCode === 13 && !(!/\S/.test(message) || !!loadingMessage) && sendMessage(message)">
           <template #prepend>
             <q-btn flat round @click="isRecognizing ? recognition.stop() : recognition.start()">
