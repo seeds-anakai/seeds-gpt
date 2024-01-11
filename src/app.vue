@@ -5,6 +5,33 @@ import { computed, ref } from 'vue';
 // Quasar
 import { scroll, uid } from 'quasar';
 
+// is recognizing
+const isRecognizing = ref(false);
+
+// Web Speech API
+const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+// speech recognition
+const recognition = new SpeechRecognition();
+
+// set lang
+recognition.lang = 'ja-JP';
+
+// onstart
+recognition.addEventListener('start', () => {
+  isRecognizing.value = true;
+});
+
+// onresult
+recognition.addEventListener('result', (e: any) => {
+  message.value = e.results[0][0].transcript;
+});
+
+// onend
+recognition.addEventListener('end', () => {
+  isRecognizing.value = false;
+});
+
 // session id
 const sessionId = uid();
 
@@ -133,8 +160,17 @@ const resize = (size: { width: number, height: number }) => {
           </template>
           <q-resize-observer debounce="0" @resize="resize" />
         </q-card>
-        <q-input v-model="message" class="fixed-bottom q-mx-auto q-pa-md" dense placeholder="Send a message..."
-          @keydown="$event.keyCode === 13 && !(!/\S/.test(message) || !!loadingMessage) && sendMessage(message)">
+        <q-input v-model="message" class="fixed-bottom q-mx-auto q-pa-md" dense placeholder="Send a message..." @keydown="$event.keyCode === 13 && !(!/\S/.test(message) || !!loadingMessage) && sendMessage(message)">
+          <template #prepend>
+            <q-btn :disable="isRecognizing" flat round @click="recognition.start()">
+              <template v-if="isRecognizing">
+                <q-spinner-dots />
+              </template>
+              <template v-else>
+                <q-icon name="mdi-microphone" />
+              </template>
+            </q-btn>
+          </template>
           <template #append>
             <q-btn :disable="!/\S/.test(message) || !!loadingMessage" flat round @click="sendMessage(message)">
               <q-icon name="mdi-send" />
