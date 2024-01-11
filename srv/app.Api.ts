@@ -41,28 +41,25 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
 
   // LangChain - Generate Image By Dalle
   const tools = [new DynamicStructuredTool({
-    name: 'generateImageByDalle',
-    description: 'DALL·Eを用いて画像を生成する。',
+    name: 'generateImageByDalle3',
+    description: 'DALL·E 3を利用して画像を生成する。',
     schema: z.object({
       prompt: z.string().describe('画像を生成するためのプロンプト。'),
       size: z.enum([
-        '256x256',
-        '512x512',
         '1024x1024',
+        '1792x1024',
+        '1024x1792',
       ]).describe('生成する画像のサイズ。ユーザーの要望に最も近いものを選択する。特に要望がない場合は「1024x1024」とする。'),
     }),
     async func({ prompt, size }) {
-      const { data } = await openAi.images.generate({
+      const { data: images } = await openAi.images.generate({
+        model: 'dall-e-3',
         prompt,
         size,
       });
 
-      return data.flatMap(({ url }) => {
-        if (url) {
-          return [`![${url}](${url})`];
-        } else {
-          return [];
-        }
+      return images.map(({ url }) => {
+        return `![${prompt}](${url})`;
       }).join('\n');
     },
   })];
