@@ -52,21 +52,19 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
       ]).describe('生成する画像のサイズ。ユーザーの要望に最も近いものを選択する。特に要望がない場合は「1024x1024」とする。'),
     }),
     async func({ prompt, size }) {
-      const { data: images } = await openAi.images.generate({
+      const { data } = await openAi.images.generate({
         model: 'dall-e-3',
         prompt,
         size,
       });
 
-      return images.map(({ url }) => {
-        return `![${prompt}](${url})`;
-      }).join('\n');
+      return JSON.stringify(data);
     },
   })];
 
   // LangChain - OpenAI Functions Agent Prompt
   const prompt = await pull<ChatPromptTemplate>('hwchase17/openai-functions-agent');
-  console.log({ prompt });
+  console.log(JSON.stringify(prompt));
 
   // LangChain - OpenAI Functions Agent
   const agent = await createOpenAIFunctionsAgent({
