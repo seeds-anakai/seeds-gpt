@@ -33,7 +33,7 @@ const llm = new ChatOpenAI({
   temperature: 0,
   maxTokens: 1024,
   streaming: true,
-  modelName: 'gpt-4',
+  modelName: 'gpt-4-1106-preview',
 });
 
 export const handler = awslambda.streamifyResponse(async (event, responseStream) => {
