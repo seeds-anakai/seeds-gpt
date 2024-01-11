@@ -17,7 +17,7 @@ import { DynamicStructuredTool } from '@langchain/community/tools/dynamic';
 import { AgentExecutor, createOpenAIFunctionsAgent } from 'langchain/agents';
 
 // LangChain - Memory
-import { BufferWindowMemory } from 'langchain/memory';
+import { BufferMemory } from 'langchain/memory';
 
 // LangChain - Hub
 import { pull } from 'langchain/hub';
@@ -81,13 +81,12 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
     partitionKey: 'id',
   });
 
-  // LangChain - Buffer Window Memory
-  const memory = new BufferWindowMemory({
+  // LangChain - Buffer Memory
+  const memory = new BufferMemory({
     chatHistory,
     returnMessages: true,
     outputKey: 'output',
     memoryKey: 'chat_history',
-    k: 3,
   });
 
   // LangChain - Agent Executor
