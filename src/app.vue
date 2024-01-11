@@ -14,7 +14,8 @@ const isRecognizing = ref(false);
 // speech recognition
 const recognition = new ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)();
 
-// set lang
+// settings
+recognition.continuous = true;
 recognition.lang = 'ja-JP';
 
 // onstart
@@ -23,8 +24,12 @@ recognition.addEventListener('start', () => {
 });
 
 // onresult
-recognition.addEventListener('result', (e: any) => {
-  message.value = e.results[0][0].transcript;
+recognition.addEventListener('result', ({ results }: any) => {
+  message.value = [...results].slice(-1)[0][0].transcript;
+
+  if (message.value) {
+    recognition.stop();
+  }
 });
 
 // onend
