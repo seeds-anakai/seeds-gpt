@@ -5,14 +5,14 @@ import { computed, ref } from 'vue';
 // Quasar
 import { scroll, uid } from 'quasar';
 
+// session id
+const sessionId = uid();
+
 // is recognizing
 const isRecognizing = ref(false);
 
-// Web Speech API
-const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
 // speech recognition
-const recognition = new SpeechRecognition();
+const recognition = new ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)();
 
 // set lang
 recognition.lang = 'ja-JP';
@@ -31,9 +31,6 @@ recognition.addEventListener('result', (e: any) => {
 recognition.addEventListener('end', () => {
   isRecognizing.value = false;
 });
-
-// session id
-const sessionId = uid();
 
 // messages
 const messages = ref<{ isLoading: boolean, text: string, type: 'sent' | 'received' }[]>([]);
