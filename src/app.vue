@@ -25,8 +25,8 @@ recognition.addEventListener('start', () => {
 
 // onresult
 recognition.addEventListener('result', ({ results }: any) => {
-  message.value = [...results].map(([{ transcript }]) => {
-    return transcript;
+  message.value = [...results].flatMap(([{ transcript }]) => {
+    return transcript ? [transcript] : [];
   }).join('');
 });
 
@@ -87,6 +87,11 @@ const sendMessage = async (text: string) => {
 
   // reset message
   message.value = '';
+
+  // stop recognition
+  if (isRecognizing.value) {
+    recognition.stop();
+  }
 
   // send message
   const { body } = await fetch(import.meta.env.VITE_API_ENDPOINT, {
@@ -168,7 +173,8 @@ const resize = (size: { width: number, height: number }) => {
             </div>
           </div>
         </template>
-        <q-input v-model="message" class="fixed-bottom q-mx-auto q-pa-md" dense placeholder="Send a message..." @keydown="$event.keyCode === 13 && !(!/\S/.test(message) || !!loadingMessage) && sendMessage(message)">
+        <q-input v-model="message" class="fixed-bottom q-mx-auto q-pa-md" dense placeholder="Send a message..."
+          @keydown="$event.keyCode === 13 && !(!/\S/.test(message) || !!loadingMessage) && sendMessage(message)">
           <template #prepend>
             <q-btn flat round @click="isRecognizing ? recognition.stop() : recognition.start()">
               <template v-if="isRecognizing">
