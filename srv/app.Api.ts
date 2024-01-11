@@ -5,7 +5,12 @@ import { OpenAI } from 'openai';
 import { ChatOpenAI } from '@langchain/openai';
 
 // LangChain - Prompts
-import type { ChatPromptTemplate } from '@langchain/core/prompts';
+import {
+  ChatPromptTemplate,
+  HumanMessagePromptTemplate,
+  MessagesPlaceholder,
+  SystemMessagePromptTemplate,
+} from '@langchain/core/prompts';
 
 // LangChain - Stores
 import { DynamoDBChatMessageHistory } from '@langchain/community/stores/message/dynamodb';
@@ -14,7 +19,10 @@ import { DynamoDBChatMessageHistory } from '@langchain/community/stores/message/
 import { DynamicStructuredTool } from '@langchain/community/tools/dynamic';
 
 // LangChain - Agents
-import { AgentExecutor, createOpenAIFunctionsAgent } from 'langchain/agents';
+import {
+  AgentExecutor,
+  createOpenAIFunctionsAgent,
+} from 'langchain/agents';
 
 // LangChain - Memory
 import { BufferMemory } from 'langchain/memory';
@@ -63,8 +71,14 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
   })];
 
   // LangChain - OpenAI Functions Agent Prompt
-  const prompt = await pull<ChatPromptTemplate>('hwchase17/openai-functions-agent');
-  console.log(JSON.stringify(prompt));
+  const prompt = ChatPromptTemplate.fromMessages([
+    SystemMessagePromptTemplate.fromTemplate(
+      'あなたは「Mallows GPT」と呼ばれるヘルプアシスタントです。指定がない限り日本語で回答します。',
+    ),
+    new MessagesPlaceholder('history'),
+    HumanMessagePromptTemplate.fromTemplate('{input}'),
+    new MessagesPlaceholder('agent_scratchpad'),
+  ]);
 
   // LangChain - OpenAI Functions Agent
   const agent = await createOpenAIFunctionsAgent({
@@ -85,7 +99,6 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
     chatHistory,
     returnMessages: true,
     outputKey: 'output',
-    memoryKey: 'chat_history',
   });
 
   // LangChain - Agent Executor
