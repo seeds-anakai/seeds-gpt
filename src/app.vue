@@ -25,11 +25,9 @@ recognition.addEventListener('start', () => {
 
 // onresult
 recognition.addEventListener('result', ({ results }: any) => {
-  message.value = [...results].slice(-1)[0][0].transcript;
-
-  if (message.value) {
-    recognition.stop();
-  }
+  message.value = [...results].map(([{ transcript }]) => {
+    return transcript;
+  }).join('');
 });
 
 // onend
@@ -164,7 +162,7 @@ const resize = (size: { width: number, height: number }) => {
         </q-card>
         <q-input v-model="message" class="fixed-bottom q-mx-auto q-pa-md" dense placeholder="Send a message..." @keydown="$event.keyCode === 13 && !(!/\S/.test(message) || !!loadingMessage) && sendMessage(message)">
           <template #prepend>
-            <q-btn :disable="isRecognizing" flat round @click="recognition.start()">
+            <q-btn flat round @click="isRecognizing ? recognition.stop() : recognition.start()">
               <template v-if="isRecognizing">
                 <q-spinner-dots />
               </template>
