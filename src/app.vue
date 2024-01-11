@@ -193,7 +193,7 @@ const resize = (size: { width: number, height: number }) => {
 }
 
 .q-message:last-child {
-  margin-bottom: 48px;
+  margin-bottom: 56px;
 }
 
 .q-avatar+:deep(div) {
