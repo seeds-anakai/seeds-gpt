@@ -204,7 +204,7 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@langchain/community@^0.0.17", "@langchain/community@~0.0.15":
+"@langchain/community@~0.0.15":
   version "0.0.17"
   resolved "https://registry.yarnpkg.com/@langchain/community/-/community-0.0.17.tgz#a66c45bdd9e7699e0591720a62d4caaf559f4834"
   integrity sha512-BI7WJv3rtIbmKrvUNeTaxGGrz8jnu4boLnpl+4cH3WE2lrKTdzuvp6Ot4dACowWInvNSfXcdMzG3BrtTMSaDcQ==
