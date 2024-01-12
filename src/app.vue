@@ -163,7 +163,7 @@ const resize = (size: { width: number, height: number }) => {
                 </div>
               </template>
               <template #default v-else-if="type === 'received'">
-                <q-markdown no-html no-linkify :src="text" />
+                <q-markdown no-html no-linkify show-copy :src="text" />
               </template>
             </q-chat-message>
           </template>
@@ -231,5 +231,10 @@ const resize = (size: { width: number, height: number }) => {
 :deep(.q-markdown--link-external:after) {
   font-family: "Material Design Icons";
   content: "\F03CC";
+}
+
+:deep(.q-markdown__copy) {
+  top: -38px;
+  right: -8px;
 }
 </style>
