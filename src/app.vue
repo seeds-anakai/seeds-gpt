@@ -223,4 +223,9 @@ const resize = (size: { width: number, height: number }) => {
 :deep(.q-markdown--line-numbers) {
   word-break: keep-all;
 }
+
+:deep(.q-markdown--link-external:after) {
+  font-family: "Material Design Icons";
+  content: "\F03CC";
+}
 </style>
