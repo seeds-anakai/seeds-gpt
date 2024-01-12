@@ -212,12 +212,15 @@ const resize = (size: { width: number, height: number }) => {
   margin-bottom: 56px;
 }
 
-.q-avatar+:deep(div) {
+.q-markdown {
+  line-height: 1.5;
+}
+
+.q-markdown .q-avatar+:deep(div) {
   max-width: calc(100% - 56px);
 }
 
-.q-markdown {
-  line-height: 1.5;
-  word-break: normal;
+:deep(.q-markdown--line-numbers) {
+  word-break: keep-all;
 }
 </style>
