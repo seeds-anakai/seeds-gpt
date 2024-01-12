@@ -212,12 +212,12 @@ const resize = (size: { width: number, height: number }) => {
   margin-bottom: 56px;
 }
 
-.q-markdown {
-  line-height: 1.5;
+.q-message .q-avatar+:deep(div) {
+  max-width: calc(100% - 56px);
 }
 
-.q-markdown .q-avatar+:deep(div) {
-  max-width: calc(100% - 56px);
+.q-markdown {
+  line-height: 1.5;
 }
 
 :deep(.q-markdown--line-numbers) {
