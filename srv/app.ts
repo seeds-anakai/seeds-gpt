@@ -130,7 +130,7 @@ class MallowsGptStack extends Stack {
                       statusDescription: 'Found',
                       headers: {
                         location: {
-                          value: 'googlechrome://navigate?url=https://' + event.request.headers.host.value + event.request.uri,
+                          value: 'googlechrome://navigate?url=https://' + event.request.headers.host.value,
                         },
                       },
                     };
