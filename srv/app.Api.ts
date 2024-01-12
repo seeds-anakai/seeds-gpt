@@ -83,6 +83,7 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
     }),
     new WikipediaQueryRun({
       topKResults: 1,
+      maxDocContentLength: 1024,
     }),
     new WebBrowser({
       model: llm,
