@@ -36,6 +36,9 @@ import { BufferMemory } from 'langchain/memory';
 // LangChain - Zod
 import { z } from 'zod';
 
+// Cities
+import { Cities } from '@/enums/cities';
+
 // OpenAI
 const openAi = new OpenAI();
 
@@ -83,6 +86,16 @@ export const handler = awslambda.streamifyResponse(async ({ headers, body }, res
           });
 
           return JSON.stringify(data);
+        },
+      }),
+      new DynamicStructuredTool({
+        name: 'getWeather',
+        description: '日本の天気を取得する。',
+        schema: z.object({
+          city: z.nativeEnum(Cities).describe('天気を取得する地名。'),
+        }),
+        async func({ city }) {
+          return await fetch(`https://weather.tsukumijima.net/api/forecast?city=${city}`).then((response) => response.text());
         },
       }),
       new WebBrowser({
