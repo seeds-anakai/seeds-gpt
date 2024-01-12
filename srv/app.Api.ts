@@ -21,9 +21,6 @@ import { DynamoDBChatMessageHistory } from '@langchain/community/stores/message/
 // LangChain - Tools - Dynamic Structured Tool
 import { DynamicStructuredTool } from '@langchain/community/tools/dynamic';
 
-// LangChain - Tools - Wikipedia
-import { WikipediaQueryRun } from '@langchain/community/tools/wikipedia_query_run';
-
 // LangChain - Tools - Web Browser
 import { WebBrowser } from 'langchain/tools/webbrowser';
 
@@ -80,10 +77,6 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
 
         return JSON.stringify(data);
       },
-    }),
-    new WikipediaQueryRun({
-      topKResults: 1,
-      maxDocContentLength: 1024,
     }),
     new WebBrowser({
       model: llm,
