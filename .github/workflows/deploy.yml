@@ -39,7 +39,11 @@ jobs:
             --require-approval never \
             --all
       - run: |
-          VITE_API_ENDPOINT=$(cat outputs.json | jq -r '.MallowsGpt.ApiEndpoint') yarn build
+          echo "VITE_API_ENDPOINT=$(cat outputs.json | jq -r '.MallowsGpt.ApiEndpoint')" >> "$GITHUB_ENV"
+          echo "VITE_BASIC_AUTH_USERNAME=${{ secrets.BASIC_AUTH_USERNAME }}" >> "$GITHUB_ENV"
+          echo "VITE_BASIC_AUTH_PASSWORD=${{ secrets.BASIC_AUTH_PASSWORD }}" >> "$GITHUB_ENV"
+      - run: |
+          yarn build
       - run: |
           aws s3 sync dist s3://$(cat outputs.json | jq -r '.MallowsGpt.AppBucketName') \
             --exact-timestamps \

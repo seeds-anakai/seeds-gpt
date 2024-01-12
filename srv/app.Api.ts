@@ -51,87 +51,96 @@ const embeddings = new OpenAIEmbeddings({
   modelName: 'text-embedding-ada-002',
 });
 
-export const handler = awslambda.streamifyResponse(async (event, responseStream) => {
-  const { input, sessionId } = JSON.parse(event.body ?? '{}');
+export const handler = awslambda.streamifyResponse(async ({ headers, body }, responseStream) => {
+  const username = process.env.BASIC_AUTH_USERNAME;
+  const password = process.env.BASIC_AUTH_PASSWORD;
 
-  // LangChain - Tools
-  const tools = [
-    new DynamicStructuredTool({
-      name: 'generateImageByDalle3',
-      description: 'DALL·E 3を利用して画像を生成する。',
-      schema: z.object({
-        prompt: z.string().describe('画像を生成するためのプロンプト。'),
-        size: z.enum([
-          '1024x1024',
-          '1792x1024',
-          '1024x1792',
-        ]).describe('生成する画像のサイズ。ユーザーの要望に最も近いものを選択する。特に要望がない場合は「1024x1024」とする。'),
-      }),
-      async func({ prompt, size }) {
-        const { data } = await openAi.images.generate({
-          model: 'dall-e-3',
-          prompt,
-          size,
-        });
+  // Get credentials from the username and password.
+  const credentials = Buffer.from(`${username}:${password}`).toString('base64');
 
-        return JSON.stringify(data);
-      },
-    }),
-    new WebBrowser({
-      model: llm,
-      embeddings,
-    }),
-  ];
+  if (headers.authorization === `Basic ${credentials}` && body) {
+    // Get the input and session id from the body.
+    const { input, sessionId } = JSON.parse(body);
 
-  // LangChain - Chat Prompt Template
-  const prompt = ChatPromptTemplate.fromMessages([
-    SystemMessagePromptTemplate.fromTemplate(
-      'あなたは「Mallows GPT」と呼ばれるヘルプアシスタントです。指定がない限り日本語で回答します。',
-    ),
-    new MessagesPlaceholder('history'),
-    HumanMessagePromptTemplate.fromTemplate('{input}'),
-    new MessagesPlaceholder('agent_scratchpad'),
-  ]);
+    // LangChain - Tools
+    const tools = [
+      new DynamicStructuredTool({
+        name: 'generateImageByDalle3',
+        description: 'DALL·E 3を利用して画像を生成する。',
+        schema: z.object({
+          prompt: z.string().describe('画像を生成するためのプロンプト。'),
+          size: z.enum([
+            '1024x1024',
+            '1792x1024',
+            '1024x1792',
+          ]).describe('生成する画像のサイズ。ユーザーの要望に最も近いものを選択する。特に要望がない場合は「1024x1024」とする。'),
+        }),
+        async func({ prompt, size }) {
+          const { data } = await openAi.images.generate({
+            model: 'dall-e-3',
+            prompt,
+            size,
+          });
 
-  // LangChain - OpenAI Functions Agent
-  const agent = await createOpenAIFunctionsAgent({
-    llm,
-    tools,
-    prompt,
-  });
-
-  // LangChain - DynamoDB Chat Message History
-  const chatHistory = new DynamoDBChatMessageHistory({
-    tableName: process.env.APP_TABLE_NAME,
-    sessionId,
-    partitionKey: 'id',
-  });
-
-  // LangChain - Buffer Memory
-  const memory = new BufferMemory({
-    chatHistory,
-    returnMessages: true,
-    outputKey: 'output',
-  });
-
-  // LangChain - Agent Executor
-  const executor = AgentExecutor.fromAgentAndTools({
-    agent,
-    tools,
-    memory,
-    verbose: true,
-  });
-
-  // Run an agent.
-  await executor.invoke({ input }, {
-    callbacks: [
-      {
-        handleLLMNewToken(token: string) {
-          responseStream.write(token);
+          return JSON.stringify(data);
         },
-      },
-    ],
-  });
+      }),
+      new WebBrowser({
+        model: llm,
+        embeddings,
+      }),
+    ];
+
+    // LangChain - Chat Prompt Template
+    const prompt = ChatPromptTemplate.fromMessages([
+      SystemMessagePromptTemplate.fromTemplate(
+        'あなたは「Mallows GPT」と呼ばれるヘルプアシスタントです。指定がない限り日本語で回答します。',
+      ),
+      new MessagesPlaceholder('history'),
+      HumanMessagePromptTemplate.fromTemplate('{input}'),
+      new MessagesPlaceholder('agent_scratchpad'),
+    ]);
+
+    // LangChain - OpenAI Functions Agent
+    const agent = await createOpenAIFunctionsAgent({
+      llm,
+      tools,
+      prompt,
+    });
+
+    // LangChain - DynamoDB Chat Message History
+    const chatHistory = new DynamoDBChatMessageHistory({
+      tableName: process.env.APP_TABLE_NAME,
+      sessionId,
+      partitionKey: 'id',
+    });
+
+    // LangChain - Buffer Memory
+    const memory = new BufferMemory({
+      chatHistory,
+      returnMessages: true,
+      outputKey: 'output',
+    });
+
+    // LangChain - Agent Executor
+    const executor = AgentExecutor.fromAgentAndTools({
+      agent,
+      tools,
+      memory,
+      verbose: true,
+    });
+
+    // Run an agent.
+    await executor.invoke({ input }, {
+      callbacks: [
+        {
+          handleLLMNewToken(token: string) {
+            responseStream.write(token);
+          },
+        },
+      ],
+    });
+  }
 
   responseStream.end();
 });

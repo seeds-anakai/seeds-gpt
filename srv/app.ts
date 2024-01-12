@@ -55,6 +55,9 @@ class MallowsGptStack extends Stack {
       memorySize: 1769, // 1 vCPU
       environment: {
         OPENAI_API_KEY: openaiApiKey,
+        BASIC_AUTH_USERNAME: basicAuthUsername,
+        BASIC_AUTH_PASSWORD: basicAuthPassword,
+        TZ: 'Asia/Tokyo',
       },
       bundling: {
         minify: true,
@@ -69,7 +72,7 @@ class MallowsGptStack extends Stack {
           '*',
         ],
         allowedOrigins: [
-          `https://gpt.${domainName}`,
+          '*',
         ],
       },
       invokeMode: lambda.InvokeMode.RESPONSE_STREAM,
@@ -144,19 +147,19 @@ class MallowsGptStack extends Stack {
                     event.request.headers.authorization.value === 'Basic ' + (username + ':' + password).toString('base64')
                   ) {
                     return event.request;
-                  }
-
-                  return {
-                    statusCode: 401,
-                    statusDescription: 'Unauthorized',
-                    headers: {
-                      'www-authenticate': {
-                        value: 'Basic',
+                  } else {
+                    return {
+                      statusCode: 401,
+                      statusDescription: 'Unauthorized',
+                      headers: {
+                        'www-authenticate': {
+                          value: 'Basic',
+                        },
                       },
-                    },
-                  };
+                    };
+                  }
                 }
-              `.replace(/^\s*| {16}|\s*$/g, '')),
+              `.replace(/^                /g, '').trim()),
               runtime: cloudfront.FunctionRuntime.JS_2_0,
             }),
             eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,

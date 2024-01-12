@@ -5,6 +5,10 @@ import { computed, ref } from 'vue';
 // Quasar
 import { scroll, uid } from 'quasar';
 
+// username and password
+const username = import.meta.env.VITE_BASIC_AUTH_USERNAME;
+const password = import.meta.env.VITE_BASIC_AUTH_PASSWORD;
+
 // session id
 const sessionId = uid();
 
@@ -97,7 +101,7 @@ const sendMessage = async (text: string) => {
   const { body } = await fetch(import.meta.env.VITE_API_ENDPOINT, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json',
+      'authorization': `Basic ${btoa(`${username}:${password}`)}`,
     },
     body: JSON.stringify({
       input: text,
