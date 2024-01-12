@@ -84,7 +84,9 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
     new SearxngSearch({
       apiBase: 'https://searxng.site/',
       params: {
+        numResults: 1,
         engines: 'google',
+        language: 'ja-JP',
       },
     }),
     new WebBrowser({
