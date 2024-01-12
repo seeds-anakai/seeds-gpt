@@ -165,7 +165,7 @@ const resize = (size: { width: number, height: number }) => {
           </template>
           <q-resize-observer debounce="0" @resize="resize" />
         </q-card>
-        <template v-if="messagesWithAttrs.length === 0">
+        <template v-if="messages.length === 0">
           <div class="absolute-center full-width text-center text-grey-7">
             <q-icon name="mdi-atom-variant" size="48px" />
             <div class="q-my-sm text-h6">
