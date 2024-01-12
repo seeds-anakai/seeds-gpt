@@ -27,9 +27,6 @@ import {
 // LangChain - Memory
 import { BufferMemory } from 'langchain/memory';
 
-// LangChain - Hub
-import { pull } from 'langchain/hub';
-
 // LangChain - Zod
 import { z } from 'zod';
 
@@ -47,7 +44,7 @@ const llm = new ChatOpenAI({
 export const handler = awslambda.streamifyResponse(async (event, responseStream) => {
   const { input, sessionId } = JSON.parse(event.body ?? '{}');
 
-  // LangChain - Generate Image By Dalle
+  // LangChain - Generate Image By DALL·E 3
   const tools = [new DynamicStructuredTool({
     name: 'generateImageByDalle3',
     description: 'DALL·E 3を利用して画像を生成する。',
@@ -109,7 +106,7 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
     verbose: true,
   });
 
-  // Run a agent.
+  // Run an agent.
   await agentExecutor.invoke({ input }, {
     callbacks: [
       {
