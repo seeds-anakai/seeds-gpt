@@ -151,7 +151,7 @@ const resize = (size: { width: number, height: number }) => {
       <q-page padding>
         <q-card class="q-mx-auto" flat>
           <template v-for="{ bgColor, icon, isLoading, name, sent, text, type } in messagesWithAttrs">
-            <q-chat-message :bg-color="bgColor" :name="name" :sent="sent" :text="[text]">
+            <q-chat-message :bg-color="bgColor" :name="name" :sent="sent">
               <template #avatar>
                 <q-avatar :class="`q-message-avatar q-message-avatar--${type}`">
                   <q-icon :name="icon" size="48px" />
@@ -164,6 +164,9 @@ const resize = (size: { width: number, height: number }) => {
               </template>
               <template #default v-else-if="type === 'received'">
                 <q-markdown no-html no-linkify show-copy :src="text" />
+              </template>
+              <template #default v-else>
+                <q-markdown no-abbreviation no-blockquote no-breaks no-container no-deflist no-emoji no-footnote no-heading-anchor-links no-highlight no-html no-image no-insert no-line-numbers no-link no-linkify no-mark no-subscript no-superscript no-tasklist no-typographer show-copy :src="text" />
               </template>
             </q-chat-message>
           </template>
@@ -234,7 +237,15 @@ const resize = (size: { width: number, height: number }) => {
 }
 
 :deep(.q-markdown__copy) {
-  top: -38px;
-  right: -8px;
+  .q-message-sent & {
+    top: -38px;
+    right: unset;
+    left: -8px;
+  }
+
+  .q-message-received & {
+    top: -38px;
+    right: -8px;
+  }
 }
 </style>
