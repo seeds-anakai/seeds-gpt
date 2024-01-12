@@ -15,8 +15,11 @@ import {
 // LangChain - Stores
 import { DynamoDBChatMessageHistory } from '@langchain/community/stores/message/dynamodb';
 
-// LangChain - Tools
+// LangChain - Tools - Dynamic Structured Tool
 import { DynamicStructuredTool } from '@langchain/community/tools/dynamic';
+
+// LangChain - Tools - Wikipedia
+import { WikipediaQueryRun } from '@langchain/community/tools/wikipedia_query_run';
 
 // LangChain - Agents
 import {
@@ -45,27 +48,32 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
   const { input, sessionId } = JSON.parse(event.body ?? '{}');
 
   // LangChain - Generate Image By DALL·E 3
-  const tools = [new DynamicStructuredTool({
-    name: 'generateImageByDalle3',
-    description: 'DALL·E 3を利用して画像を生成する。',
-    schema: z.object({
-      prompt: z.string().describe('画像を生成するためのプロンプト。'),
-      size: z.enum([
-        '1024x1024',
-        '1792x1024',
-        '1024x1792',
-      ]).describe('生成する画像のサイズ。ユーザーの要望に最も近いものを選択する。特に要望がない場合は「1024x1024」とする。'),
-    }),
-    async func({ prompt, size }) {
-      const { data } = await openAi.images.generate({
-        model: 'dall-e-3',
-        prompt,
-        size,
-      });
+  const tools = [
+    new DynamicStructuredTool({
+      name: 'generateImageByDalle3',
+      description: 'DALL·E 3を利用して画像を生成する。',
+      schema: z.object({
+        prompt: z.string().describe('画像を生成するためのプロンプト。'),
+        size: z.enum([
+          '1024x1024',
+          '1792x1024',
+          '1024x1792',
+        ]).describe('生成する画像のサイズ。ユーザーの要望に最も近いものを選択する。特に要望がない場合は「1024x1024」とする。'),
+      }),
+      async func({ prompt, size }) {
+        const { data } = await openAi.images.generate({
+          model: 'dall-e-3',
+          prompt,
+          size,
+        });
 
-      return JSON.stringify(data);
-    },
-  })];
+        return JSON.stringify(data);
+      },
+    }),
+    new WikipediaQueryRun({
+      topKResults: 1,
+    }),
+  ];
 
   // LangChain - OpenAI Functions Agent Prompt
   const prompt = ChatPromptTemplate.fromMessages([
