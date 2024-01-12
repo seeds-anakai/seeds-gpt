@@ -238,7 +238,7 @@ class MallowsGptStack extends Stack {
       appBucket.grantReadWrite(githubDeployRole);
 
       // Add permissions to access App Distribution.
-      appDistribution.grantCreateInvalidation(githubDeployRole);
+      appDistribution.grant(githubDeployRole, 'cloudfront:CreateInvalidation', 'cloudfront:GetInvalidation');
     }
   }
 }
