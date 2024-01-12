@@ -31,6 +31,8 @@ jobs:
             -c domainName=${{ env.DOMAIN_NAME }} \
             -c certificateArn=${{ secrets.CERTIFICATE_ARN }} \
             -c openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
+            -c basicAuthUsername=${{ secrets.BASIC_AUTH_USERNAME }} \
+            -c basicAuthPassword=${{ secrets.BASIC_AUTH_PASSWORD }} \
             -c githubRepository=${{ github.repository }} \
             -c githubRef=${{ github.ref }} \
             --outputs-file outputs.json \

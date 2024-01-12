@@ -37,10 +37,12 @@ class MallowsGptStack extends Stack {
     super(scope, id, props);
 
     // Context Values
-    const [domainName, certificateArn, openaiApiKey, githubRepository, githubRef] = [
+    const [domainName, certificateArn, openaiApiKey, basicAuthUsername, basicAuthPassword, githubRepository, githubRef] = [
       this.node.getContext('domainName'),
       this.node.getContext('certificateArn'),
       this.node.getContext('openaiApiKey'),
+      this.node.getContext('basicAuthUsername'),
+      this.node.getContext('basicAuthPassword'),
       this.node.tryGetContext('githubRepository'),
       this.node.tryGetContext('githubRef'),
     ];
@@ -113,6 +115,34 @@ class MallowsGptStack extends Stack {
           originPath: '/',
         }),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        functionAssociations: [
+          {
+            function: new cloudfront.Function(this, 'BasicAuthFunction', {
+              code: cloudfront.FunctionCode.fromInline(`
+                function handler({ request }) {
+                  const username = '${basicAuthUsername}';
+                  const password = '${basicAuthPassword}';
+
+                  if (request.headers.authorization?.value === 'Basic ' + (username + ':' + password).toString('base64')) {
+                    return request;
+                  }
+
+                  return {
+                    statusCode: 401,
+                    statusDescription: 'Unauthorized',
+                    headers: {
+                      'www-authenticate': {
+                        value: 'Basic',
+                      },
+                    },
+                  };
+                };
+              `),
+              runtime: cloudfront.FunctionRuntime.JS_2_0,
+            }),
+            eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+          },
+        ],
       },
       certificate,
       defaultRootObject: 'index.html',
