@@ -136,8 +136,8 @@ class MallowsGptStack extends Stack {
                       },
                     },
                   };
-                };
-              `),
+                }
+              `.replace(/^\s*| {16}|\s*$/g, '')),
               runtime: cloudfront.FunctionRuntime.JS_2_0,
             }),
             eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
