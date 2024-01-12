@@ -239,8 +239,7 @@ const resize = (size: { width: number, height: number }) => {
 :deep(.q-markdown__copy) {
   .q-message-sent & {
     top: -38px;
-    right: unset;
-    left: -8px;
+    right: -62px;
   }
 
   .q-message-received & {
