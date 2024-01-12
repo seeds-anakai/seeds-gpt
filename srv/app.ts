@@ -119,12 +119,15 @@ class MallowsGptStack extends Stack {
           {
             function: new cloudfront.Function(this, 'BasicAuthFunction', {
               code: cloudfront.FunctionCode.fromInline(`
-                function handler({ request }) {
+                function handler(event) {
                   const username = '${basicAuthUsername}';
                   const password = '${basicAuthPassword}';
 
-                  if (request.headers.authorization?.value === 'Basic ' + (username + ':' + password).toString('base64')) {
-                    return request;
+                  if (
+                    event.request.headers.authorization &&
+                    event.request.headers.authorization.value === 'Basic ' + (username + ':' + password).toString('base64')
+                  ) {
+                    return event.request;
                   }
 
                   return {
