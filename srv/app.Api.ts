@@ -42,7 +42,6 @@ const openAi = new OpenAI();
 // LangChain - Chat OpenAI
 const llm = new ChatOpenAI({
   temperature: 0,
-  maxTokens: 1024,
   streaming: true,
   modelName: 'gpt-4-1106-preview',
 });
