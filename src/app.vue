@@ -138,7 +138,7 @@ const resize = (size: { width: number, height: number }) => {
           Mallows GPT
         </q-toolbar-title>
         <q-space />
-        <q-btn dense flat href="https://github.com/malvaceae/gpt.mallows.io" target="_blank" round>
+        <q-btn dense flat href="https://github.com/malvaceae/gpt.mallows.io" round target="_blank">
           <q-icon name="mdi-github" />
         </q-btn>
       </q-toolbar>
@@ -173,8 +173,7 @@ const resize = (size: { width: number, height: number }) => {
             </div>
           </div>
         </template>
-        <q-input v-model="message" class="fixed-bottom q-mx-auto q-pa-md" dense placeholder="Send a message..."
-          @keydown="$event.keyCode === 13 && !(!/\S/.test(message) || !!loadingMessage) && sendMessage(message)">
+        <q-input v-model="message" class="fixed-bottom q-mx-auto q-pa-md" dense placeholder="Send a message..." @keydown="$event.keyCode === 13 && !(!/\S/.test(message) || !!loadingMessage) && sendMessage(message)">
           <template #prepend>
             <q-btn flat round @click="isRecognizing ? recognition.stop() : recognition.start()">
               <template v-if="isRecognizing">
