@@ -148,7 +148,7 @@ const resize = (size: { width: number, height: number }) => {
       </q-toolbar>
     </q-header>
     <q-page-container>
-      <q-page padding>
+      <q-page class="q-py-md" padding>
         <q-card class="q-mx-auto" flat>
           <template v-for="{ bgColor, icon, isLoading, name, sent, text, type } in messagesWithAttrs">
             <q-chat-message :bg-color="bgColor" :name="name" :sent="sent">
