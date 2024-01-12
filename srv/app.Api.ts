@@ -21,9 +21,6 @@ import { DynamoDBChatMessageHistory } from '@langchain/community/stores/message/
 // LangChain - Tools - Dynamic Structured Tool
 import { DynamicStructuredTool } from '@langchain/community/tools/dynamic';
 
-// LangChain - Tools - SearxNG API
-import { SearxngSearch } from '@langchain/community/tools/searxng_search';
-
 // LangChain - Tools - Web Browser
 import { WebBrowser } from 'langchain/tools/webbrowser';
 
@@ -79,14 +76,6 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
         });
 
         return JSON.stringify(data);
-      },
-    }),
-    new SearxngSearch({
-      apiBase: 'https://searxng.site/',
-      params: {
-        numResults: 1,
-        engines: 'google',
-        language: 'ja-JP',
       },
     }),
     new WebBrowser({
