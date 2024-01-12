@@ -2,7 +2,10 @@
 import { OpenAI } from 'openai';
 
 // LangChain - Chat Models
-import { ChatOpenAI } from '@langchain/openai';
+import {
+  ChatOpenAI,
+  OpenAIEmbeddings,
+} from '@langchain/openai';
 
 // LangChain - Prompts
 import {
@@ -20,6 +23,9 @@ import { DynamicStructuredTool } from '@langchain/community/tools/dynamic';
 
 // LangChain - Tools - Wikipedia
 import { WikipediaQueryRun } from '@langchain/community/tools/wikipedia_query_run';
+
+// LangChain - Tools - Web Browser
+import { WebBrowser } from 'langchain/tools/webbrowser';
 
 // LangChain - Agents
 import {
@@ -42,6 +48,11 @@ const llm = new ChatOpenAI({
   maxTokens: 1024,
   streaming: true,
   modelName: 'gpt-4-1106-preview',
+});
+
+// LangChain - OpenAI Embeddings
+const embeddings = new OpenAIEmbeddings({
+  modelName: 'text-embedding-ada-002',
 });
 
 export const handler = awslambda.streamifyResponse(async (event, responseStream) => {
@@ -72,6 +83,10 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
     }),
     new WikipediaQueryRun({
       topKResults: 1,
+    }),
+    new WebBrowser({
+      model: llm,
+      embeddings,
     }),
   ];
 
