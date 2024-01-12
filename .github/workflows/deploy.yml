@@ -44,4 +44,8 @@ jobs:
       - run: |
           aws cloudfront create-invalidation \
             --distribution-id $(cat outputs.json | jq -r '.MallowsGpt.AppDistributionId') \
-            --paths '/*'
+            --paths '/*' | jq -r '"INVALIDATION_ID=" + .Invalidation.Id' >> "$GITHUB_ENV"
+      - run: |
+          aws cloudfront wait invalidation-completed \
+            --distribution-id $(cat outputs.json | jq -r '.MallowsGpt.AppDistributionId') \
+            --id $INVALIDATION_ID
