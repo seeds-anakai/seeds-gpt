@@ -159,7 +159,7 @@ const resize = (size: { width: number, height: number }) => {
                 </div>
               </template>
               <template #default v-else-if="type === 'received'">
-                <q-markdown no-html :src="text" />
+                <q-markdown no-html no-linkify :src="text" />
               </template>
             </q-chat-message>
           </template>
