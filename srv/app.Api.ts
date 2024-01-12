@@ -58,7 +58,7 @@ const embeddings = new OpenAIEmbeddings({
 export const handler = awslambda.streamifyResponse(async (event, responseStream) => {
   const { input, sessionId } = JSON.parse(event.body ?? '{}');
 
-  // LangChain - Generate Image By DALL·E 3
+  // LangChain - Tools
   const tools = [
     new DynamicStructuredTool({
       name: 'generateImageByDalle3',
@@ -95,7 +95,7 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
     }),
   ];
 
-  // LangChain - OpenAI Functions Agent Prompt
+  // LangChain - Chat Prompt Template
   const prompt = ChatPromptTemplate.fromMessages([
     SystemMessagePromptTemplate.fromTemplate(
       'あなたは「Mallows GPT」と呼ばれるヘルプアシスタントです。指定がない限り日本語で回答します。',
@@ -127,7 +127,7 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
   });
 
   // LangChain - Agent Executor
-  const agentExecutor = AgentExecutor.fromAgentAndTools({
+  const executor = AgentExecutor.fromAgentAndTools({
     agent,
     tools,
     memory,
@@ -135,7 +135,7 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
   });
 
   // Run an agent.
-  await agentExecutor.invoke({ input }, {
+  await executor.invoke({ input }, {
     callbacks: [
       {
         handleLLMNewToken(token: string) {
