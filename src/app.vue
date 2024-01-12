@@ -97,7 +97,7 @@ const sendMessage = async (text: string) => {
   const { body } = await fetch(import.meta.env.VITE_API_ENDPOINT, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       input: text,
