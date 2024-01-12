@@ -120,6 +120,22 @@ class MallowsGptStack extends Stack {
             function: new cloudfront.Function(this, 'BasicAuthFunction', {
               code: cloudfront.FunctionCode.fromInline(`
                 function handler(event) {
+                  if (
+                    event.request.headers['user-agent'] &&
+                    event.request.headers['user-agent'].value.includes('Android') &&
+                    event.request.headers['user-agent'].value.includes('Line')
+                  ) {
+                    return {
+                      statusCode: 302,
+                      statusDescription: 'Found',
+                      headers: {
+                        location: {
+                          value: 'googlechrome://navigate?url=https://' + event.request.headers.host.value + event.request.uri,
+                        },
+                      },
+                    };
+                  }
+
                   const username = '${basicAuthUsername}';
                   const password = '${basicAuthPassword}';
 
