@@ -1,7 +1,7 @@
 /**
- * Cities
+ * City
  */
-export enum Cities {
+export enum City {
   稚内 = '011000',
   旭川 = '012010',
   留萌 = '012020',
