@@ -142,7 +142,6 @@ export const handler = awslambda.streamifyResponse(async ({ headers, body }, res
       agent,
       tools,
       memory,
-      verbose: true,
     });
 
     // Run an agent.
