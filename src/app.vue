@@ -128,10 +128,13 @@ const sendMessage = async (text: string) => {
   }
 };
 
+// visual viewport height
+const visualViewportHeight = ref(window.visualViewport?.height);
+
 // get page style
 const getPageStyle = (offset: number) => {
-  if (window.visualViewport) {
-    return { minHeight: `calc(${window.visualViewport.height}px - ${offset}px)` };
+  if (visualViewportHeight.value) {
+    return { minHeight: `calc(${visualViewportHeight.value}px - ${offset}px)` };
   } else {
     return { minHeight: `calc(100vh - ${offset}px)` };
   }
@@ -139,6 +142,7 @@ const getPageStyle = (offset: number) => {
 
 // resize
 const resize = (size: { width: number, height: number }) => {
+  visualViewportHeight.value = window.visualViewport?.height;
   scroll.setVerticalScrollPosition(window, size.height);
 };
 </script>
@@ -179,7 +183,6 @@ const resize = (size: { width: number, height: number }) => {
               </template>
             </q-chat-message>
           </template>
-          <q-resize-observer debounce="0" @resize="resize" />
         </q-card>
         <template v-if="messages.length === 0">
           <div class="absolute-center full-width text-center text-grey-7">
@@ -210,6 +213,7 @@ const resize = (size: { width: number, height: number }) => {
         </template>
       </q-input>
     </q-footer>
+    <q-resize-observer debounce="0" @resize="resize" />
   </q-layout>
 </template>
 
