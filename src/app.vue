@@ -128,6 +128,15 @@ const sendMessage = async (text: string) => {
   }
 };
 
+// get page style
+const getPageStyle = (offset: number) => {
+  if (window.visualViewport) {
+    return { minHeight: `calc(${window.visualViewport.height}px - ${offset}px)` };
+  } else {
+    return { minHeight: `calc(100vh - ${offset}px)` };
+  }
+};
+
 // resize
 const resize = (size: { width: number, height: number }) => {
   scroll.setVerticalScrollPosition(window, size.height);
@@ -135,7 +144,7 @@ const resize = (size: { width: number, height: number }) => {
 </script>
 
 <template>
-  <q-layout view="hHh LpR fFf" :style="{ minHeight: '100dvh' }">
+  <q-layout view="hHh LpR fFf">
     <q-header class="bg-grey-9 text-grey-3" elevated>
       <q-toolbar class="q-mx-auto">
         <q-toolbar-title shrink>
@@ -148,7 +157,7 @@ const resize = (size: { width: number, height: number }) => {
       </q-toolbar>
     </q-header>
     <q-page-container>
-      <q-page class="q-pt-md" padding :style-fn="(offset) => ({ minHeight: `calc(100dvh - ${offset}px)` })">
+      <q-page class="q-pt-md" padding :style-fn="getPageStyle">
         <q-card class="q-mx-auto" flat>
           <template v-for="{ bgColor, icon, isLoading, name, sent, text, type } in messagesWithAttrs">
             <q-chat-message :bg-color="bgColor" :name="name" :sent="sent">
