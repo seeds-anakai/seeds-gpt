@@ -37,14 +37,13 @@ class MallowsGptStack extends Stack {
     super(scope, id, props);
 
     // Context Values
-    const [domainName, certificateArn, openaiApiKey, basicAuthUsername, basicAuthPassword, githubRepository, githubRef] = [
+    const [domainName, certificateArn, openaiApiKey, basicAuthUsername, basicAuthPassword, githubRepo] = [
       this.node.getContext('domainName'),
       this.node.getContext('certificateArn'),
       this.node.getContext('openaiApiKey'),
       this.node.getContext('basicAuthUsername'),
       this.node.getContext('basicAuthPassword'),
-      this.node.tryGetContext('githubRepository'),
-      this.node.tryGetContext('githubRef'),
+      this.node.tryGetContext('githubRepo'),
     ];
 
     // Api
@@ -255,8 +254,8 @@ class MallowsGptStack extends Stack {
       target,
     });
 
-    // If the GitHub repository name and ref of the branch exists, create a role to cdk deploy from GitHub.
-    if (githubRepository && githubRef) {
+    // If the GitHub repository name exists, create a role to cdk deploy from GitHub.
+    if (githubRepo) {
       // GitHub OpenID Connect Provider
       const githubOpenIdConnectProvider = iam.OpenIdConnectProvider.fromOpenIdConnectProviderArn(this, 'GitHubOpenIdConnectProvider', `arn:aws:iam::${this.account}:oidc-provider/token.actions.githubusercontent.com`);
 
@@ -267,7 +266,7 @@ class MallowsGptStack extends Stack {
             [`${githubOpenIdConnectProvider.openIdConnectProviderIssuer}:aud`]: 'sts.amazonaws.com',
           },
           'StringLike': {
-            [`${githubOpenIdConnectProvider.openIdConnectProviderIssuer}:sub`]: `repo:${githubRepository}:ref:${githubRef}`,
+            [`${githubOpenIdConnectProvider.openIdConnectProviderIssuer}:sub`]: `repo:${githubRepo}:*`,
           },
         }),
         inlinePolicies: {
@@ -290,7 +289,10 @@ class MallowsGptStack extends Stack {
       appBucket.grantReadWrite(githubDeployRole);
 
       // Add permissions to access App Distribution.
-      appDistribution.grant(githubDeployRole, 'cloudfront:CreateInvalidation', 'cloudfront:GetInvalidation');
+      appDistribution.grant(githubDeployRole, ...[
+        'cloudfront:CreateInvalidation',
+        'cloudfront:GetInvalidation',
+      ]);
     }
   }
 }
