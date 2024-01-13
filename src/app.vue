@@ -158,7 +158,7 @@ const resize = (size: { width: number, height: number }) => {
 </script>
 
 <template>
-  <q-layout view="hHh LpR fFf">
+  <q-layout view="hHh LpR fFf" :style="{ minHeight: `calc(var(--visual-viewport-height))` }">
     <q-header class="bg-grey-9 text-grey-3" elevated>
       <q-toolbar class="q-mx-auto">
         <q-toolbar-title shrink>
