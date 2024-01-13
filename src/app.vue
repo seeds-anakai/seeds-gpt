@@ -223,7 +223,7 @@ const resize = (size: { width: number, height: number }) => {
   max-width: calc(100% - 56px);
 }
 
-.q-markdown {
+:deep(.q-markdown) {
   line-height: 1.5;
 }
 
