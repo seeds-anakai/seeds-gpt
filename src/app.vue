@@ -128,29 +128,6 @@ const sendMessage = async (text: string) => {
   }
 };
 
-// visual viewport height
-document.documentElement.style.setProperty(
-  '--visual-viewport-height',
-  `${visualViewport?.height}px`,
-)
-
-// visual viewport height - resize
-visualViewport?.addEventListener?.('resize', () => {
-  document.documentElement.style.setProperty(
-    '--visual-viewport-height',
-    `${visualViewport?.height}px`,
-  )
-})
-
-// get page style
-const getPageStyle = (offset: number) => {
-  if (offset) {
-    return { minHeight: `calc(var(--visual-viewport-height) - ${offset}px)` };
-  } else {
-    return { minHeight: `calc(var(--visual-viewport-height))` };
-  }
-};
-
 // resize
 const resize = (size: { width: number, height: number }) => {
   scroll.setVerticalScrollPosition(window, size.height);
@@ -158,7 +135,7 @@ const resize = (size: { width: number, height: number }) => {
 </script>
 
 <template>
-  <q-layout view="hHh LpR fFf" :style="{ minHeight: `calc(var(--visual-viewport-height))` }">
+  <q-layout view="hHh LpR fFf">
     <q-header class="bg-grey-9 text-grey-3" elevated>
       <q-toolbar class="q-mx-auto">
         <q-toolbar-title shrink>
@@ -171,7 +148,7 @@ const resize = (size: { width: number, height: number }) => {
       </q-toolbar>
     </q-header>
     <q-page-container>
-      <q-page class="q-pt-md" padding :style-fn="getPageStyle">
+      <q-page class="q-pt-md" padding>
         <q-card class="q-mx-auto" flat>
           <template v-for="{ bgColor, icon, isLoading, name, sent, text, type } in messagesWithAttrs">
             <q-chat-message :bg-color="bgColor" :name="name" :sent="sent">
