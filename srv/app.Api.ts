@@ -31,7 +31,7 @@ import {
 } from 'langchain/agents';
 
 // LangChain - Memory
-import { BufferMemory } from 'langchain/memory';
+import { BufferWindowMemory } from 'langchain/memory';
 
 // LangChain - Zod
 import { z } from 'zod';
@@ -45,6 +45,7 @@ const openAi = new OpenAI();
 // LangChain - Chat OpenAI
 const llm = new ChatOpenAI({
   temperature: 0,
+  maxTokens: 1024,
   streaming: true,
   modelName: 'gpt-4-1106-preview',
 });
@@ -128,11 +129,12 @@ export const handler = awslambda.streamifyResponse(async ({ headers, body }, res
       partitionKey: 'id',
     });
 
-    // LangChain - Buffer Memory
-    const memory = new BufferMemory({
+    // LangChain - Buffer Window Memory
+    const memory = new BufferWindowMemory({
       chatHistory,
       returnMessages: true,
       outputKey: 'output',
+      k: 3,
     });
 
     // LangChain - Agent Executor
