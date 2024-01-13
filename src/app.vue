@@ -148,7 +148,7 @@ const resize = (size: { width: number, height: number }) => {
       </q-toolbar>
     </q-header>
     <q-page-container>
-      <q-page class="q-py-md" padding>
+      <q-page class="q-pt-md" padding>
         <q-card class="q-mx-auto" flat>
           <template v-for="{ bgColor, icon, isLoading, name, sent, text, type } in messagesWithAttrs">
             <q-chat-message :bg-color="bgColor" :name="name" :sent="sent">
@@ -180,25 +180,27 @@ const resize = (size: { width: number, height: number }) => {
             </div>
           </div>
         </template>
-        <q-input v-model="message" class="fixed-bottom q-mx-auto q-pa-md" dense placeholder="Send a message..." @keydown="$event.keyCode === 13 && !(!/\S/.test(message) || !!loadingMessage) && sendMessage(message)">
-          <template #prepend>
-            <q-btn flat round @click="isRecognizing ? recognition.stop() : recognition.start()">
-              <template v-if="isRecognizing">
-                <q-spinner-dots />
-              </template>
-              <template v-else>
-                <q-icon name="mdi-microphone" />
-              </template>
-            </q-btn>
-          </template>
-          <template #append>
-            <q-btn :disable="!/\S/.test(message) || !!loadingMessage" flat round @click="sendMessage(message)">
-              <q-icon name="mdi-send" />
-            </q-btn>
-          </template>
-        </q-input>
       </q-page>
     </q-page-container>
+    <q-footer class="bg-white">
+      <q-input v-model="message" class="q-mx-auto q-pa-md" dense placeholder="Send a message..." @keydown="$event.keyCode === 13 && !(!/\S/.test(message) || !!loadingMessage) && sendMessage(message)">
+        <template #prepend>
+          <q-btn flat round @click="isRecognizing ? recognition.stop() : recognition.start()">
+            <template v-if="isRecognizing">
+              <q-spinner-dots />
+            </template>
+            <template v-else>
+              <q-icon name="mdi-microphone" />
+            </template>
+          </q-btn>
+        </template>
+        <template #append>
+          <q-btn :disable="!/\S/.test(message) || !!loadingMessage" flat round @click="sendMessage(message)">
+            <q-icon name="mdi-send" />
+          </q-btn>
+        </template>
+      </q-input>
+    </q-footer>
   </q-layout>
 </template>
 
@@ -213,10 +215,6 @@ const resize = (size: { width: number, height: number }) => {
 
 .q-field {
   max-width: $breakpoint-sm-min;
-}
-
-.q-message:last-child {
-  margin-bottom: 56px;
 }
 
 .q-message .q-avatar+:deep(div) {
