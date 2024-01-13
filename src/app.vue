@@ -1,9 +1,24 @@
 <script lang="ts" setup>
 // Vue.js
-import { computed, ref } from 'vue';
+import { computed, ref, watchEffect } from 'vue';
+
+// Page Store
+import { usePageStore } from '@/stores/page';
 
 // Quasar
-import { scroll, uid } from 'quasar';
+import { scroll, uid, useQuasar } from 'quasar';
+
+// get the page store
+const page = usePageStore();
+
+// get the $q object
+const $q = useQuasar();
+
+// set dark mode status
+$q.dark.set(page.dark);
+
+// watch dark mode status
+watchEffect(() => (page.dark = $q.dark.mode));
 
 // username and password
 const username = import.meta.env.VITE_BASIC_AUTH_USERNAME;
@@ -46,7 +61,7 @@ const messages = ref<{ isLoading: boolean, text: string, type: 'sent' | 'receive
 const messagesWithAttrs = computed(() => messages.value.map(({ isLoading, text, type }) => {
   if (type === 'sent') {
     return {
-      bgColor: 'green-4',
+      bgColor: $q.dark.isActive ? 'green-9' : 'green-4',
       icon: 'mdi-account-circle',
       isLoading,
       name: 'Me',
@@ -56,7 +71,7 @@ const messagesWithAttrs = computed(() => messages.value.map(({ isLoading, text, 
     };
   } else {
     return {
-      bgColor: 'grey-4',
+      bgColor: $q.dark.isActive ? 'grey-9' : 'grey-4',
       icon: 'mdi-robot',
       isLoading,
       name: "Mallows GPT",
@@ -136,12 +151,20 @@ const resize = (size: { width: number, height: number }) => {
 
 <template>
   <q-layout view="hHh LpR fFf">
-    <q-header class="bg-grey-9 text-grey-3" elevated>
+    <q-header :class="$q.dark.isActive ? 'bg-grey-10 text-grey-4' : 'bg-grey-9 text-grey-3'" elevated>
       <q-toolbar class="q-mx-auto">
         <q-toolbar-title shrink>
           Mallows GPT
         </q-toolbar-title>
         <q-space />
+        <q-btn class="q-mr-sm" dense flat round @click="$q.dark.toggle()">
+          <template v-if="$q.dark.isActive">
+            <q-icon name="mdi-weather-night" />
+          </template>
+          <template v-else>
+            <q-icon name="mdi-weather-sunny" />
+          </template>
+        </q-btn>
         <q-btn dense flat href="https://github.com/malvaceae/gpt.mallows.io" round target="_blank">
           <q-icon name="mdi-github" />
         </q-btn>
@@ -149,7 +172,7 @@ const resize = (size: { width: number, height: number }) => {
     </q-header>
     <q-page-container>
       <q-page class="q-pt-md" padding>
-        <q-card class="q-mx-auto" flat>
+        <q-card class="q-mx-auto bg-transparent" flat>
           <template v-for="{ bgColor, icon, isLoading, name, sent, text, type } in messagesWithAttrs">
             <q-chat-message :bg-color="bgColor" :name="name" :sent="sent">
               <template #avatar>
@@ -173,7 +196,7 @@ const resize = (size: { width: number, height: number }) => {
           <q-resize-observer debounce="0" @resize="resize" />
         </q-card>
         <template v-if="messages.length === 0">
-          <div class="absolute-center full-width text-center text-grey-7">
+          <div class="absolute-center full-width text-center" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-8'">
             <q-icon name="mdi-atom-variant" size="48px" />
             <div class="q-my-sm text-h6">
               How can I help you today?
@@ -182,7 +205,7 @@ const resize = (size: { width: number, height: number }) => {
         </template>
       </q-page>
     </q-page-container>
-    <q-footer class="bg-white">
+    <q-footer :style="{ backgroundColor: $q.dark.isActive ? 'var(--q-dark-page)' : 'white' }">
       <q-input v-model="message" class="q-mx-auto q-pa-md" dense placeholder="Send a message..." @keydown="$event.keyCode === 13 && !(!/\S/.test(message) || !!loadingMessage) && sendMessage(message)">
         <template #prepend>
           <q-btn flat round @click="isRecognizing ? recognition.stop() : recognition.start()">

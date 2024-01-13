@@ -18,6 +18,8 @@
     "constructs": "^10.3.0",
     "langchain": "^0.1.2",
     "openai": "^4.24.7",
+    "pinia": "^2.1.7",
+    "pinia-plugin-persistedstate": "^3.2.1",
     "postcss": "^8.4.33",
     "quasar": "^2.14.2",
     "sass": "^1.69.7",
