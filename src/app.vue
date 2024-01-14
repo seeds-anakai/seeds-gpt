@@ -157,17 +157,19 @@ const resize = (size: { width: number, height: number }) => {
           Mallows GPT
         </q-toolbar-title>
         <q-space />
-        <q-btn class="q-mr-sm" dense flat round @click="$q.dark.toggle()">
-          <template v-if="$q.dark.isActive">
-            <q-icon name="mdi-weather-night" />
-          </template>
-          <template v-else>
-            <q-icon name="mdi-weather-sunny" />
-          </template>
-        </q-btn>
-        <q-btn dense flat href="https://github.com/malvaceae/gpt.mallows.io" round target="_blank">
-          <q-icon name="mdi-github" />
-        </q-btn>
+        <div class="row q-gutter-sm">
+          <q-btn dense flat round @click="$q.dark.toggle()">
+            <template v-if="$q.dark.isActive">
+              <q-icon name="mdi-weather-night" />
+            </template>
+            <template v-else>
+              <q-icon name="mdi-weather-sunny" />
+            </template>
+          </q-btn>
+          <q-btn dense flat href="https://github.com/malvaceae/gpt.mallows.io" round target="_blank">
+            <q-icon name="mdi-github" />
+          </q-btn>
+        </div>
       </q-toolbar>
     </q-header>
     <q-page-container>
