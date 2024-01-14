@@ -15,6 +15,12 @@ import {
   SystemMessagePromptTemplate,
 } from '@langchain/core/prompts';
 
+// LangChain - Messages
+import {
+  HumanMessage,
+  MessageContent,
+} from '@langchain/core/messages';
+
 // LangChain - Stores
 import { DynamoDBChatMessageHistory } from '@langchain/community/stores/message/dynamodb';
 
@@ -33,6 +39,9 @@ import {
 // LangChain - Memory
 import { BufferWindowMemory } from 'langchain/memory';
 
+// LangChain - Chains
+import { LLMChain } from 'langchain/chains';
+
 // LangChain - Zod
 import { z } from 'zod';
 
@@ -41,14 +50,6 @@ import { City } from '@/enums/city';
 
 // OpenAI
 const openAi = new OpenAI();
-
-// LangChain - Chat OpenAI
-const llm = new ChatOpenAI({
-  temperature: 0,
-  maxTokens: 1024,
-  streaming: true,
-  modelName: 'gpt-4-1106-preview',
-});
 
 // LangChain - OpenAI Embeddings
 const embeddings = new OpenAIEmbeddings({
@@ -65,103 +66,174 @@ export const handler = awslambda.streamifyResponse(async ({ headers, requestCont
 
   if (headers.authorization === `Basic ${credentials}`) {
     if (requestContext.http.method === 'POST' && body) {
-      // Get the input and session id from the body.
-      const { input, sessionId } = JSON.parse(body);
-
-      // LangChain - Tools
-      const tools = [
-        new DynamicStructuredTool({
-          name: 'genImageByDalle3',
-          description: 'DALL·E 3を利用して画像を生成する',
-          schema: z.object({
-            prompt: z.string().describe('画像を生成するためのプロンプト'),
-            size: z.enum([
-              '1024x1024',
-              '1792x1024',
-              '1024x1792',
-            ]).describe('生成する画像のサイズ。ユーザーの要望に最も近いものを選択する。特に要望がない場合は「1024x1024」とする'),
-          }),
-          async func({ prompt, size }) {
-            const { data } = await openAi.images.generate({
-              model: 'dall-e-3',
-              prompt,
-              size,
-            });
-
-            return JSON.stringify(data);
-          },
-        }),
-        new DynamicStructuredTool({
-          name: 'getWeatherByCity',
-          description: '日本の天気を取得する',
-          schema: z.object({
-            city: z.nativeEnum(City).describe('天気を取得する地名'),
-          }),
-          async func({ city }) {
-            return await fetch(`https://weather.tsukumijima.net/api/forecast?city=${city}`).then((response) => {
-              return response.text();
-            });
-          },
-        }),
-        new WebBrowser({
-          model: llm,
-          embeddings,
-        }),
-      ];
-
-      // LangChain - Chat Prompt Template
-      const prompt = ChatPromptTemplate.fromMessages([
-        SystemMessagePromptTemplate.fromTemplate(`
-          あなたは「Mallows GPT」と呼ばれるヘルプアシスタントです。
-          指定がない限り日本語で回答します。
-        `.replace(/\s/g, '')),
-        new MessagesPlaceholder('history'),
-        HumanMessagePromptTemplate.fromTemplate('{input}'),
-        new MessagesPlaceholder('agent_scratchpad'),
-      ]);
-
-      // LangChain - OpenAI Functions Agent
-      const agent = await createOpenAIFunctionsAgent({
-        llm,
-        tools,
-        prompt,
-      });
-
-      // LangChain - DynamoDB Chat Message History
-      const chatHistory = new DynamoDBChatMessageHistory({
-        tableName: process.env.APP_TABLE_NAME,
+      // Get the input from the request body.
+      const {
+        input,
+        imageUrls,
         sessionId,
-        partitionKey: 'id',
-      });
+      } = JSON.parse(body);
 
-      // LangChain - Buffer Window Memory
-      const memory = new BufferWindowMemory({
-        chatHistory,
-        returnMessages: true,
-        outputKey: 'output',
-        k: 3,
-      });
+      if (imageUrls.length) {
+        // LangChain - Chat OpenAI - GPT-4 Turbo with Vision
+        const llm = new ChatOpenAI({
+          modelName: 'gpt-4-vision-preview',
+          temperature: 0,
+          maxTokens: 1024,
+          streaming: true,
+        });
 
-      // LangChain - Agent Executor
-      const executor = AgentExecutor.fromAgentAndTools({
-        agent,
-        tools,
-        memory,
-      });
+        // LangChain - Human Message Content
+        const content: Exclude<MessageContent, string> = [];
 
-      // Run an agent.
-      await executor.invoke({ input }, {
-        callbacks: [
-          {
-            handleLLMNewToken(token: string) {
-              responseStream.write(token);
+        // Add the input.
+        if (input) {
+          content.push({
+            type: 'text',
+            text: input,
+          });
+        }
+
+        // Add the image URLs.
+        imageUrls.forEach((url: string) => {
+          content.push({
+            type: 'image_url',
+            image_url: {
+              url,
             },
-          },
-        ],
-      });
+          });
+        });
 
-      // Close a stream.
-      responseStream.end();
+        // LangChain - Chat Prompt Template
+        const prompt = ChatPromptTemplate.fromMessages([
+          SystemMessagePromptTemplate.fromTemplate(`
+            あなたは「Mallows GPT」と呼ばれるヘルプアシスタントです。
+            指定がない限り日本語で回答します。
+          `.replace(/\s/g, '')),
+          new HumanMessage({
+            content,
+          }),
+        ]);
+
+        // LangChain - LLM Chain
+        const chain = new LLMChain({
+          llm,
+          prompt,
+        });
+
+        // Run a chain.
+        await chain.invoke({}, {
+          callbacks: [
+            {
+              handleLLMNewToken(token: string) {
+                responseStream.write(token);
+              },
+            },
+          ],
+        });
+      } else {
+        // LangChain - Chat OpenAI - GPT-4 Turbo
+        const llm = new ChatOpenAI({
+          modelName: 'gpt-4-1106-preview',
+          temperature: 0,
+          maxTokens: 1024,
+          streaming: true,
+        });
+
+        // LangChain - Tools
+        const tools = [
+          new DynamicStructuredTool({
+            name: 'genImageByDalle3',
+            description: 'DALL·E 3を利用して画像を生成する',
+            schema: z.object({
+              prompt: z.string().describe('画像を生成するためのプロンプト'),
+              size: z.enum([
+                '1024x1024',
+                '1792x1024',
+                '1024x1792',
+              ]).describe('生成する画像のサイズ。ユーザーの要望に最も近いものを選択する。特に要望がない場合は「1024x1024」とする'),
+            }),
+            async func({ prompt, size }) {
+              const { data } = await openAi.images.generate({
+                model: 'dall-e-3',
+                prompt,
+                size,
+              });
+
+              return JSON.stringify(data);
+            },
+          }),
+          new DynamicStructuredTool({
+            name: 'getWeatherByCity',
+            description: '日本の天気を取得する',
+            schema: z.object({
+              city: z.nativeEnum(City).describe('天気を取得する地名'),
+            }),
+            async func({ city }) {
+              return await fetch(`https://weather.tsukumijima.net/api/forecast?city=${city}`).then((response) => {
+                return response.text();
+              });
+            },
+          }),
+          new WebBrowser({
+            model: llm,
+            embeddings,
+          }),
+        ];
+
+        // LangChain - Chat Prompt Template
+        const prompt = ChatPromptTemplate.fromMessages([
+          SystemMessagePromptTemplate.fromTemplate(`
+            あなたは「Mallows GPT」と呼ばれるヘルプアシスタントです。
+            指定がない限り日本語で回答します。
+          `.replace(/\s/g, '')),
+          new MessagesPlaceholder('history'),
+          HumanMessagePromptTemplate.fromTemplate('{input}'),
+          new MessagesPlaceholder('agent_scratchpad'),
+        ]);
+
+        // LangChain - OpenAI Functions Agent
+        const agent = await createOpenAIFunctionsAgent({
+          llm,
+          tools,
+          prompt,
+        });
+
+        // LangChain - DynamoDB Chat Message History
+        const chatHistory = new DynamoDBChatMessageHistory({
+          tableName: process.env.APP_TABLE_NAME,
+          sessionId,
+          partitionKey: 'id',
+        });
+
+        // LangChain - Buffer Window Memory
+        const memory = new BufferWindowMemory({
+          chatHistory,
+          returnMessages: true,
+          outputKey: 'output',
+          k: 3,
+        });
+
+        // LangChain - Agent Executor
+        const executor = AgentExecutor.fromAgentAndTools({
+          agent,
+          tools,
+          memory,
+        });
+
+        // Run an agent.
+        await executor.invoke({ input }, {
+          callbacks: [
+            {
+              handleLLMNewToken(token: string) {
+                responseStream.write(token);
+              },
+            },
+          ],
+        });
+      }
     }
   }
+
+  // Close a stream.
+  responseStream.end();
 });

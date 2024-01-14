@@ -6,7 +6,7 @@ import { computed, ref, watchEffect } from 'vue';
 import { usePageStore } from '@/stores/page';
 
 // Quasar
-import { scroll, uid, useQuasar } from 'quasar';
+import { QFile, scroll, uid, useQuasar } from 'quasar';
 
 // get the page store
 const page = usePageStore();
@@ -85,15 +85,48 @@ const messagesWithAttrs = computed(() => messages.value.map(({ isLoading, text, 
 // loading message
 const loadingMessage = computed(() => messages.value.find(({ isLoading }) => isLoading));
 
+// file
+const file = ref<QFile>();
+
 // message
 const message = ref('');
 
+// images
+const images = ref<File[]>([]);
+
+// images with url
+const imagesWithUrl = ref<(File & { url: string })[]>([]);
+
+// watch images
+watchEffect(async () => {
+  imagesWithUrl.value = await Promise.all(images.value.map((image) => {
+    return new Promise<File & { url: string }>((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.addEventListener('load', ({ target }) => {
+        if (typeof target?.result === 'string') {
+          resolve(Object.assign(image, {
+            url: target.result,
+          }));
+        } else {
+          reject();
+        }
+      });
+
+      reader.readAsDataURL(image);
+    });
+  }));
+});
+
 // send message
-const sendMessage = async (text: string) => {
+const sendMessage = async (text: string, imagesWithUrl: (File & { url: string })[]) => {
+  // image urls
+  const imageUrls = imagesWithUrl.map(({ url }) => url);
+
   // my message
   messages.value.push({
     type: 'sent',
-    text,
+    text: [text, ...imageUrls.map((url, i) => `![${i}](${url})`)].join('\n\n'),
     isLoading: false,
   });
 
@@ -106,6 +139,9 @@ const sendMessage = async (text: string) => {
 
   // reset message
   message.value = '';
+
+  // reset images
+  images.value = [];
 
   // stop recognition
   if (isRecognizing.value) {
@@ -120,6 +156,7 @@ const sendMessage = async (text: string) => {
     },
     body: JSON.stringify({
       input: text,
+      imageUrls,
       sessionId,
     }),
   });
@@ -191,7 +228,7 @@ const resize = (size: { width: number, height: number }) => {
                 <q-markdown no-html no-linkify show-copy :src="text" />
               </template>
               <template #default v-else>
-                <q-markdown no-abbreviation no-blockquote no-breaks no-container no-deflist no-emoji no-footnote no-heading-anchor-links no-highlight no-html no-image no-insert no-line-numbers no-link no-linkify no-mark no-subscript no-superscript no-tasklist no-typographer show-copy :src="text" />
+                <q-markdown no-abbreviation no-blockquote no-breaks no-container no-deflist no-emoji no-footnote no-heading-anchor-links no-highlight no-html no-insert no-line-numbers no-link no-linkify no-mark no-subscript no-superscript no-tasklist no-typographer show-copy :src="text" />
               </template>
             </q-chat-message>
           </template>
@@ -207,10 +244,24 @@ const resize = (size: { width: number, height: number }) => {
         </template>
       </q-page>
     </q-page-container>
-    <q-footer :style="{ backgroundColor: $q.dark.isActive ? 'var(--q-dark-page)' : 'white' }">
-      <q-input v-model="message" class="q-mx-auto q-pa-md" dense placeholder="Send a message..." @keydown="$event.keyCode === 13 && !(!/\S/.test(message) || !!loadingMessage) && sendMessage(message)">
+    <q-footer class="q-py-md" :style="{ backgroundColor: $q.dark.isActive ? 'var(--q-dark-page)' : 'white' }">
+      <div class="images row q-gutter-sm q-mx-auto q-px-md">
+        <div v-for="image in imagesWithUrl" class="relative-position">
+          <q-img height="56px" img-class="rounded-borders" :src="image.url" width="56px" />
+          <q-btn class="absolute" dense flat round style="top: -16px; right: -16px;" @click="file?.removeFile?.(image)">
+            <q-icon name="mdi-close" />
+          </q-btn>
+        </div>
+      </div>
+      <q-file ref="file" v-model="images" class="hidden" accept="image/*" append multiple />
+      <q-input v-model="message" class="q-mx-auto q-px-md" dense placeholder="Send a message..." @keydown="$event.keyCode === 13 && !((!/\S/.test(message) && images.length === 0) || !!loadingMessage) && sendMessage(message, imagesWithUrl)">
         <template #prepend>
-          <q-btn flat round @click="isRecognizing ? recognition.stop() : recognition.start()">
+          <q-btn dense flat round @click="file?.pickFiles?.($event)">
+            <q-icon name="mdi-paperclip" />
+          </q-btn>
+        </template>
+        <template #append>
+          <q-btn dense flat round @click="isRecognizing ? recognition.stop() : recognition.start()">
             <template v-if="isRecognizing">
               <q-spinner-dots />
             </template>
@@ -219,8 +270,8 @@ const resize = (size: { width: number, height: number }) => {
             </template>
           </q-btn>
         </template>
-        <template #append>
-          <q-btn :disable="!/\S/.test(message) || !!loadingMessage" flat round @click="sendMessage(message)">
+        <template #after>
+          <q-btn dense :disable="(!/\S/.test(message) && images.length === 0) || !!loadingMessage" flat round @click="sendMessage(message, imagesWithUrl)">
             <q-icon name="mdi-send" />
           </q-btn>
         </template>
@@ -239,6 +290,10 @@ const resize = (size: { width: number, height: number }) => {
 }
 
 .q-field {
+  max-width: $breakpoint-sm-min;
+}
+
+.images {
   max-width: $breakpoint-sm-min;
 }
 
