@@ -246,6 +246,14 @@ const resize = (size: { width: number, height: number }) => {
 
 :deep(.q-markdown) {
   line-height: 1.5;
+
+  a[target="_blank"] {
+    color: $blue;
+  }
+
+  a[target="_blank"]:visited {
+    color: $purple-4;
+  }
 }
 
 :deep(.q-markdown--line-numbers) {
