@@ -246,7 +246,7 @@ const resize = (size: { width: number, height: number }) => {
     </q-page-container>
     <q-footer class="q-py-md" :style="{ backgroundColor: $q.dark.isActive ? 'var(--q-dark-page)' : 'white' }">
       <div class="images row q-gutter-sm q-mx-auto q-px-md">
-        <div v-for="image in imagesWithUrl" class="relative-position">
+        <div v-for="image in imagesWithUrl" class="relative-position" :key="image.name">
           <q-img height="56px" img-class="rounded-borders" :src="image.url" width="56px" />
           <q-btn class="absolute" dense flat round style="top: -16px; right: -16px;" @click="file?.removeFile?.(image)">
             <q-icon name="mdi-close" />
