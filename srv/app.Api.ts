@@ -55,106 +55,113 @@ const embeddings = new OpenAIEmbeddings({
   modelName: 'text-embedding-ada-002',
 });
 
-export const handler = awslambda.streamifyResponse(async ({ headers, body }, responseStream) => {
+export const handler = awslambda.streamifyResponse(async ({ headers, requestContext, body }, responseStream) => {
+  // Username and Password
   const username = process.env.BASIC_AUTH_USERNAME;
   const password = process.env.BASIC_AUTH_PASSWORD;
 
   // Get credentials from the username and password.
   const credentials = Buffer.from(`${username}:${password}`).toString('base64');
 
-  if (headers.authorization === `Basic ${credentials}` && body) {
-    // Get the input and session id from the body.
-    const { input, sessionId } = JSON.parse(body);
+  if (headers.authorization === `Basic ${credentials}`) {
+    if (requestContext.http.method === 'POST' && body) {
+      // Get the input and session id from the body.
+      const { input, sessionId } = JSON.parse(body);
 
-    // LangChain - Tools
-    const tools = [
-      new DynamicStructuredTool({
-        name: 'generateImageByDalle3',
-        description: 'DALL·E 3を利用して画像を生成する。',
-        schema: z.object({
-          prompt: z.string().describe('画像を生成するためのプロンプト。'),
-          size: z.enum([
-            '1024x1024',
-            '1792x1024',
-            '1024x1792',
-          ]).describe('生成する画像のサイズ。ユーザーの要望に最も近いものを選択する。特に要望がない場合は「1024x1024」とする。'),
-        }),
-        async func({ prompt, size }) {
-          const { data } = await openAi.images.generate({
-            model: 'dall-e-3',
-            prompt,
-            size,
-          });
+      // LangChain - Tools
+      const tools = [
+        new DynamicStructuredTool({
+          name: 'genImageByDalle3',
+          description: 'DALL·E 3を利用して画像を生成する',
+          schema: z.object({
+            prompt: z.string().describe('画像を生成するためのプロンプト'),
+            size: z.enum([
+              '1024x1024',
+              '1792x1024',
+              '1024x1792',
+            ]).describe('生成する画像のサイズ。ユーザーの要望に最も近いものを選択する。特に要望がない場合は「1024x1024」とする'),
+          }),
+          async func({ prompt, size }) {
+            const { data } = await openAi.images.generate({
+              model: 'dall-e-3',
+              prompt,
+              size,
+            });
 
-          return JSON.stringify(data);
-        },
-      }),
-      new DynamicStructuredTool({
-        name: 'getWeatherByCity',
-        description: '日本の天気を取得する。',
-        schema: z.object({
-          city: z.nativeEnum(City).describe('天気を取得する地名。'),
-        }),
-        async func({ city }) {
-          return await fetch(`https://weather.tsukumijima.net/api/forecast?city=${city}`).then((response) => response.text());
-        },
-      }),
-      new WebBrowser({
-        model: llm,
-        embeddings,
-      }),
-    ];
-
-    // LangChain - Chat Prompt Template
-    const prompt = ChatPromptTemplate.fromMessages([
-      SystemMessagePromptTemplate.fromTemplate(
-        'あなたは「Mallows GPT」と呼ばれるヘルプアシスタントです。指定がない限り日本語で回答します。',
-      ),
-      new MessagesPlaceholder('history'),
-      HumanMessagePromptTemplate.fromTemplate('{input}'),
-      new MessagesPlaceholder('agent_scratchpad'),
-    ]);
-
-    // LangChain - OpenAI Functions Agent
-    const agent = await createOpenAIFunctionsAgent({
-      llm,
-      tools,
-      prompt,
-    });
-
-    // LangChain - DynamoDB Chat Message History
-    const chatHistory = new DynamoDBChatMessageHistory({
-      tableName: process.env.APP_TABLE_NAME,
-      sessionId,
-      partitionKey: 'id',
-    });
-
-    // LangChain - Buffer Window Memory
-    const memory = new BufferWindowMemory({
-      chatHistory,
-      returnMessages: true,
-      outputKey: 'output',
-      k: 3,
-    });
-
-    // LangChain - Agent Executor
-    const executor = AgentExecutor.fromAgentAndTools({
-      agent,
-      tools,
-      memory,
-    });
-
-    // Run an agent.
-    await executor.invoke({ input }, {
-      callbacks: [
-        {
-          handleLLMNewToken(token: string) {
-            responseStream.write(token);
+            return JSON.stringify(data);
           },
-        },
-      ],
-    });
-  }
+        }),
+        new DynamicStructuredTool({
+          name: 'getWeatherByCity',
+          description: '日本の天気を取得する',
+          schema: z.object({
+            city: z.nativeEnum(City).describe('天気を取得する地名'),
+          }),
+          async func({ city }) {
+            return await fetch(`https://weather.tsukumijima.net/api/forecast?city=${city}`).then((response) => {
+              return response.text();
+            });
+          },
+        }),
+        new WebBrowser({
+          model: llm,
+          embeddings,
+        }),
+      ];
 
-  responseStream.end();
+      // LangChain - Chat Prompt Template
+      const prompt = ChatPromptTemplate.fromMessages([
+        SystemMessagePromptTemplate.fromTemplate(`
+          あなたは「Mallows GPT」と呼ばれるヘルプアシスタントです。
+          指定がない限り日本語で回答します。
+        `.replace(/\s/g, '')),
+        new MessagesPlaceholder('history'),
+        HumanMessagePromptTemplate.fromTemplate('{input}'),
+        new MessagesPlaceholder('agent_scratchpad'),
+      ]);
+
+      // LangChain - OpenAI Functions Agent
+      const agent = await createOpenAIFunctionsAgent({
+        llm,
+        tools,
+        prompt,
+      });
+
+      // LangChain - DynamoDB Chat Message History
+      const chatHistory = new DynamoDBChatMessageHistory({
+        tableName: process.env.APP_TABLE_NAME,
+        sessionId,
+        partitionKey: 'id',
+      });
+
+      // LangChain - Buffer Window Memory
+      const memory = new BufferWindowMemory({
+        chatHistory,
+        returnMessages: true,
+        outputKey: 'output',
+        k: 3,
+      });
+
+      // LangChain - Agent Executor
+      const executor = AgentExecutor.fromAgentAndTools({
+        agent,
+        tools,
+        memory,
+      });
+
+      // Run an agent.
+      await executor.invoke({ input }, {
+        callbacks: [
+          {
+            handleLLMNewToken(token: string) {
+              responseStream.write(token);
+            },
+          },
+        ],
+      });
+
+      // Close a stream.
+      responseStream.end();
+    }
+  }
 });
