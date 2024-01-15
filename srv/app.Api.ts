@@ -1,3 +1,6 @@
+// Node.js Core Modules
+import { createHash } from 'crypto';
+
 // OpenAI
 import { OpenAI } from 'openai';
 
@@ -42,7 +45,17 @@ import { BufferWindowMemory } from 'langchain/memory';
 // LangChain - Chains
 import { LLMChain } from 'langchain/chains';
 
-// LangChain - Zod
+// AWS SDK - S3
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+
+// AWS SDK - S3 Request Presigner
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
+// Zod
 import { z } from 'zod';
 
 // City
@@ -56,6 +69,10 @@ const embeddings = new OpenAIEmbeddings({
   modelName: 'text-embedding-ada-002',
 });
 
+// AWS SDK - S3 - Client
+const s3 = new S3Client();
+
+// Lambda Handler
 export const handler = awslambda.streamifyResponse(async ({ headers, requestContext, body }, responseStream) => {
   // Username and Password
   const username = process.env.BASIC_AUTH_USERNAME;
@@ -82,6 +99,35 @@ export const handler = awslambda.streamifyResponse(async ({ headers, requestCont
           streaming: true,
         });
 
+        // Signed Image URLs
+        const signedImageUrls = await Promise.all(imageUrls.map(async (url: string) => {
+          // Get a file.
+          const response = await fetch(url);
+
+          // Get a content type.
+          const contentType = response.headers.get('content-type') ?? undefined;
+
+          // Get a body.
+          const body = await response.arrayBuffer().then(Buffer.from);
+
+          // Get a key.
+          const key = createHash('sha256').update(body).digest('hex');
+
+          // Put a file.
+          await s3.send(new PutObjectCommand({
+            Bucket: process.env.FILE_BUCKET_NAME,
+            Key: key,
+            ContentType: contentType,
+            Body: body,
+          }));
+
+          // Get a signed url.
+          return await getSignedUrl(s3, new GetObjectCommand({
+            Bucket: process.env.FILE_BUCKET_NAME,
+            Key: key,
+          }));
+        }));
+
         // LangChain - Human Message Content
         const content: Exclude<MessageContent, string> = [];
 
@@ -93,8 +139,8 @@ export const handler = awslambda.streamifyResponse(async ({ headers, requestCont
           });
         }
 
-        // Add the image URLs.
-        imageUrls.forEach((url: string) => {
+        // Add the signed image urls.
+        signedImageUrls.forEach((url: string) => {
           content.push({
             type: 'image_url',
             image_url: {
@@ -109,19 +155,35 @@ export const handler = awslambda.streamifyResponse(async ({ headers, requestCont
             あなたは「Mallows GPT」と呼ばれるヘルプアシスタントです。
             指定がない限り日本語で回答します。
           `.replace(/\s/g, '')),
+          new MessagesPlaceholder('history'),
           new HumanMessage({
             content,
           }),
         ]);
 
+        // LangChain - DynamoDB Chat Message History
+        const chatHistory = new DynamoDBChatMessageHistory({
+          tableName: process.env.APP_TABLE_NAME,
+          sessionId,
+          partitionKey: 'id',
+        });
+
+        // LangChain - Buffer Window Memory
+        const memory = new BufferWindowMemory({
+          chatHistory,
+          returnMessages: true,
+          k: 3,
+        });
+
         // LangChain - LLM Chain
         const chain = new LLMChain({
           llm,
           prompt,
+          memory,
         });
 
         // Run a chain.
-        await chain.invoke({}, {
+        await chain.invoke({ input: JSON.stringify(content) }, {
           callbacks: [
             {
               handleLLMNewToken(token: string) {

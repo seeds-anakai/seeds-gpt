@@ -119,9 +119,12 @@ watchEffect(async () => {
 });
 
 // send message
-const sendMessage = async (text: string, imagesWithUrl: (File & { url: string })[]) => {
-  // image urls
-  const imageUrls = imagesWithUrl.map(({ url }) => url);
+const sendMessage = async (text: string, imageUrls: string[]) => {
+  // reset message
+  message.value = '';
+
+  // reset images
+  images.value = [];
 
   // my message
   messages.value.push({
@@ -136,12 +139,6 @@ const sendMessage = async (text: string, imagesWithUrl: (File & { url: string })
     text: '',
     isLoading: true,
   });
-
-  // reset message
-  message.value = '';
-
-  // reset images
-  images.value = [];
 
   // stop recognition
   if (isRecognizing.value) {
@@ -254,7 +251,7 @@ const resize = (size: { width: number, height: number }) => {
         </div>
       </div>
       <q-file ref="file" v-model="images" class="hidden" accept="image/*" append multiple />
-      <q-input v-model="message" class="q-mx-auto q-px-md" dense placeholder="Send a message..." @keydown="$event.keyCode === 13 && !((!/\S/.test(message) && images.length === 0) || !!loadingMessage) && sendMessage(message, imagesWithUrl)">
+      <q-input v-model="message" class="q-mx-auto q-px-md" dense placeholder="Send a message..." @keydown="$event.keyCode === 13 && !((!/\S/.test(message) && images.length === 0) || !!loadingMessage) && sendMessage(message, imagesWithUrl.map(({ url }) => url))">
         <template #prepend>
           <q-btn dense flat round @click="file?.pickFiles?.($event)">
             <q-icon name="mdi-paperclip" />
@@ -271,7 +268,7 @@ const resize = (size: { width: number, height: number }) => {
           </q-btn>
         </template>
         <template #after>
-          <q-btn dense :disable="(!/\S/.test(message) && images.length === 0) || !!loadingMessage" flat round @click="sendMessage(message, imagesWithUrl)">
+          <q-btn dense :disable="(!/\S/.test(message) && images.length === 0) || !!loadingMessage" flat round @click="sendMessage(message, imagesWithUrl.map(({ url }) => url))">
             <q-icon name="mdi-send" />
           </q-btn>
         </template>

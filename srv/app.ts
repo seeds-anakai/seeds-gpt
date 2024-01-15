@@ -97,6 +97,17 @@ class MallowsGptStack extends Stack {
     // Add permissions to access App Table.
     appTable.grantReadWriteData(api);
 
+    // File Bucket
+    const fileBucket = new s3.Bucket(this, 'FileBucket', {
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+    });
+
+    // Add environment variable for access File Bucket.
+    api.addEnvironment('FILE_BUCKET_NAME', fileBucket.bucketName);
+
+    // Add permissions to access File Bucket.
+    fileBucket.grantReadWrite(api);
+
     // App Bucket
     const appBucket = new s3.Bucket(this, 'AppBucket', {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
