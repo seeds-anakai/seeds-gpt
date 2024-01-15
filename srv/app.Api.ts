@@ -154,7 +154,7 @@ export const handler = awslambda.streamifyResponse(async ({ headers, requestCont
           SystemMessagePromptTemplate.fromTemplate(`
             あなたは「Mallows GPT」と呼ばれるヘルプアシスタントです。
             指定がない限り日本語で回答します。
-          `.replace(/\s/g, '')),
+          `.replace(/ {10,12}/g, '').trim()),
           new MessagesPlaceholder('history'),
           new HumanMessage({
             content,
@@ -247,7 +247,7 @@ export const handler = awslambda.streamifyResponse(async ({ headers, requestCont
           SystemMessagePromptTemplate.fromTemplate(`
             あなたは「Mallows GPT」と呼ばれるヘルプアシスタントです。
             指定がない限り日本語で回答します。
-          `.replace(/\s/g, '')),
+          `.replace(/ {10,12}/g, '').trim()),
           new MessagesPlaceholder('history'),
           HumanMessagePromptTemplate.fromTemplate('{input}'),
           new MessagesPlaceholder('agent_scratchpad'),
