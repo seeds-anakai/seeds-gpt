@@ -180,7 +180,7 @@ class MallowsGptStack extends Stack {
       },
       certificate,
       defaultRootObject: 'index.html',
-      domainNames: [
+      domainNames: domainName && [
         `gpt.${domainName}`,
       ],
       errorResponses: [
