@@ -152,7 +152,7 @@ export const handler = awslambda.streamifyResponse(async ({ headers, requestCont
         // LangChain - Chat Prompt Template
         const prompt = ChatPromptTemplate.fromMessages([
           SystemMessagePromptTemplate.fromTemplate(`
-            あなたは「Mallows GPT」と呼ばれるヘルプアシスタントです。
+            あなたは「Seeds GPT」と呼ばれるヘルプアシスタントです。
             指定がない限り日本語で回答します。
           `.replace(/ {10,12}/g, '').trim()),
           new MessagesPlaceholder('history'),
@@ -245,7 +245,7 @@ export const handler = awslambda.streamifyResponse(async ({ headers, requestCont
         // LangChain - Chat Prompt Template
         const prompt = ChatPromptTemplate.fromMessages([
           SystemMessagePromptTemplate.fromTemplate(`
-            あなたは「Mallows GPT」と呼ばれるヘルプアシスタントです。
+            あなたは「Seeds GPT」と呼ばれるヘルプアシスタントです。
             指定がない限り日本語で回答します。
           `.replace(/ {10,12}/g, '').trim()),
           new MessagesPlaceholder('history'),

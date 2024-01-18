@@ -17,7 +17,7 @@ export default defineConfig({
       entry: '/src/main.ts',
       inject: {
         data: {
-          title: 'Mallows GPT',
+          title: 'Seeds GPT',
         },
       },
       viteNext: true,

@@ -21,9 +21,9 @@ import {
 import { Construct } from 'constructs';
 
 /**
- * Mallows GPT Stack Construct
+ * Seeds GPT Stack Construct
  */
-class MallowsGptStack extends Stack {
+class SeedsGptStack extends Stack {
   /**
    * Creates a new stack.
    *
@@ -207,7 +207,7 @@ class MallowsGptStack extends Stack {
     // Origin Access Control
     const originAccessControl = new cloudfront.CfnOriginAccessControl(this, 'OriginAccessControl', {
       originAccessControlConfig: {
-        name: 'OriginAccessControlForMallowsGpt',
+        name: 'OriginAccessControlForSeedsGpt',
         originAccessControlOriginType: 's3',
         signingBehavior: 'always',
         signingProtocol: 'sigv4',
@@ -321,7 +321,7 @@ const env = Object.fromEntries(['account', 'region'].map((key) => {
   return [key, process.env[`CDK_DEFAULT_${key.toUpperCase()}`]];
 }));
 
-// Mallows GPT Stack
-new MallowsGptStack(app, 'MallowsGpt', {
+// Seeds GPT Stack
+new SeedsGptStack(app, 'SeedsGpt', {
   env,
 });

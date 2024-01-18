@@ -74,7 +74,7 @@ const messagesWithAttrs = computed(() => messages.value.map(({ isLoading, text, 
       bgColor: $q.dark.isActive ? 'grey-9' : 'grey-4',
       icon: 'mdi-robot',
       isLoading,
-      name: "Mallows GPT",
+      name: "Seeds GPT",
       sent: false,
       text,
       type,
@@ -188,7 +188,7 @@ const resize = (size: { width: number, height: number }) => {
     <q-header :class="$q.dark.isActive ? 'bg-grey-10 text-grey-4' : 'bg-grey-9 text-grey-3'" elevated>
       <q-toolbar class="q-mx-auto">
         <q-toolbar-title shrink>
-          Mallows GPT
+          Seeds GPT
         </q-toolbar-title>
         <q-space />
         <div class="row q-gutter-sm">
@@ -200,7 +200,7 @@ const resize = (size: { width: number, height: number }) => {
               <q-icon name="mdi-weather-sunny" />
             </template>
           </q-btn>
-          <q-btn dense flat href="https://github.com/malvaceae/gpt.mallows.io" round target="_blank">
+          <q-btn dense flat href="https://github.com/seeds-anakai/seeds-gpt" round target="_blank">
             <q-icon name="mdi-github" />
           </q-btn>
         </div>
