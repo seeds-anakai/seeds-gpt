@@ -31,6 +31,7 @@ jobs:
             -c domainName=${{ env.DOMAIN_NAME }} \
             -c certificateArn=${{ secrets.CERTIFICATE_ARN }} \
             -c openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
+            -c openaiOrganization=${{ secrets.OPENAI_ORGANIZATION }} \
             -c basicAuthUsername=${{ secrets.BASIC_AUTH_USERNAME }} \
             -c basicAuthPassword=${{ secrets.BASIC_AUTH_PASSWORD }} \
             -c githubRepo=${{ github.repository }} \

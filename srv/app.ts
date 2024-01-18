@@ -37,10 +37,11 @@ class MallowsGptStack extends Stack {
     super(scope, id, props);
 
     // Context Values
-    const [domainName, certificateArn, openaiApiKey, basicAuthUsername, basicAuthPassword, githubRepo] = [
+    const [domainName, certificateArn, openaiApiKey, openaiOrganization, basicAuthUsername, basicAuthPassword, githubRepo] = [
       this.node.getContext('domainName'),
       this.node.getContext('certificateArn'),
       this.node.getContext('openaiApiKey'),
+      this.node.getContext('openaiOrganization'),
       this.node.getContext('basicAuthUsername'),
       this.node.getContext('basicAuthPassword'),
       this.node.tryGetContext('githubRepo'),
@@ -54,6 +55,7 @@ class MallowsGptStack extends Stack {
       memorySize: 1769, // 1 vCPU
       environment: {
         OPENAI_API_KEY: openaiApiKey,
+        OPENAI_ORGANIZATION: openaiOrganization,
         BASIC_AUTH_USERNAME: basicAuthUsername,
         BASIC_AUTH_PASSWORD: basicAuthPassword,
         TZ: 'Asia/Tokyo',
