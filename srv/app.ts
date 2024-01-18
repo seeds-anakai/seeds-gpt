@@ -37,13 +37,13 @@ class MallowsGptStack extends Stack {
     super(scope, id, props);
 
     // Context Values
-    const [domainName, certificateArn, openaiApiKey, openaiOrganization, basicAuthUsername, basicAuthPassword, githubRepo] = [
-      this.node.getContext('domainName'),
-      this.node.getContext('certificateArn'),
+    const [openaiApiKey, openaiOrganization, basicAuthUsername, basicAuthPassword, domainName, certificateArn, githubRepo] = [
       this.node.getContext('openaiApiKey'),
       this.node.getContext('openaiOrganization'),
       this.node.getContext('basicAuthUsername'),
       this.node.getContext('basicAuthPassword'),
+      this.node.tryGetContext('domainName'),
+      this.node.tryGetContext('certificateArn'),
       this.node.tryGetContext('githubRepo'),
     ];
 
@@ -120,8 +120,8 @@ class MallowsGptStack extends Stack {
       value: appBucket.bucketName,
     });
 
-    // Certificate
-    const certificate = acm.Certificate.fromCertificateArn(this, 'Certificate', certificateArn);
+    // If the certificate arn exists, get the Certificate.
+    const certificate = certificateArn && acm.Certificate.fromCertificateArn(this, 'Certificate', certificateArn);
 
     // App Distribution
     const appDistribution = new cloudfront.Distribution(this, 'AppDistribution', {
@@ -252,20 +252,23 @@ class MallowsGptStack extends Stack {
       },
     }));
 
-    // Hosted Zone
-    const zone = route53.HostedZone.fromLookup(this, 'HostedZone', {
-      domainName,
-    });
+    // If the domain name exists, create a alias record to App Distribution.
+    if (domainName) {
+      // Hosted Zone
+      const zone = route53.HostedZone.fromLookup(this, 'HostedZone', {
+        domainName,
+      });
 
-    // App Distribution Alias Record Target
-    const target = route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(appDistribution));
+      // App Distribution Alias Record Target
+      const target = route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(appDistribution));
 
-    // App Distribution Alias Record
-    new route53.ARecord(this, 'AppDistributionAliasRecord', {
-      zone,
-      recordName: 'gpt',
-      target,
-    });
+      // App Distribution Alias Record
+      new route53.ARecord(this, 'AppDistributionAliasRecord', {
+        zone,
+        recordName: 'gpt',
+        target,
+      });
+    }
 
     // If the GitHub repository name exists, create a role to cdk deploy from GitHub.
     if (githubRepo) {
