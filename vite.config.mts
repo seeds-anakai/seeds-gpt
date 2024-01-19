@@ -20,7 +20,6 @@ export default defineConfig({
           title: 'Mallows GPT',
         },
       },
-      viteNext: true,
     }),
     vue({
       template: {
