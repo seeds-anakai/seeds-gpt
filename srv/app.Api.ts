@@ -1,6 +1,3 @@
-// Node.js Core Modules
-import { createHash } from 'crypto';
-
 // OpenAI
 import { OpenAI } from 'openai';
 
@@ -24,9 +21,6 @@ import {
   MessageContent,
 } from '@langchain/core/messages';
 
-// LangChain - Stores
-import { DynamoDBChatMessageHistory } from '@langchain/community/stores/message/dynamodb';
-
 // LangChain - Tools - Dynamic Structured Tool
 import { DynamicStructuredTool } from '@langchain/community/tools/dynamic';
 
@@ -45,16 +39,6 @@ import { BufferWindowMemory } from 'langchain/memory';
 // LangChain - Chains
 import { LLMChain } from 'langchain/chains';
 
-// AWS SDK - S3
-import {
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
-
-// AWS SDK - S3 Request Presigner
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-
 // Zod
 import { z } from 'zod';
 
@@ -68,9 +52,6 @@ const openAi = new OpenAI();
 const embeddings = new OpenAIEmbeddings({
   modelName: 'text-embedding-ada-002',
 });
-
-// AWS SDK - S3 - Client
-const s3 = new S3Client();
 
 // Lambda Handler
 export const handler = awslambda.streamifyResponse(async ({ headers, requestContext, body }, responseStream) => {
@@ -87,7 +68,7 @@ export const handler = awslambda.streamifyResponse(async ({ headers, requestCont
       const {
         input,
         imageUrls,
-        sessionId,
+        history,
       } = JSON.parse(body);
 
       if (imageUrls.length) {
@@ -98,35 +79,6 @@ export const handler = awslambda.streamifyResponse(async ({ headers, requestCont
           maxTokens: 1024,
           streaming: true,
         });
-
-        // Signed Image URLs
-        const signedImageUrls = await Promise.all(imageUrls.map(async (url: string) => {
-          // Get a file.
-          const response = await fetch(url);
-
-          // Get a content type.
-          const contentType = response.headers.get('content-type') ?? undefined;
-
-          // Get a body.
-          const body = await response.arrayBuffer().then(Buffer.from);
-
-          // Get a key.
-          const key = createHash('sha256').update(body).digest('hex');
-
-          // Put a file.
-          await s3.send(new PutObjectCommand({
-            Bucket: process.env.FILE_BUCKET_NAME,
-            Key: key,
-            ContentType: contentType,
-            Body: body,
-          }));
-
-          // Get a signed url.
-          return await getSignedUrl(s3, new GetObjectCommand({
-            Bucket: process.env.FILE_BUCKET_NAME,
-            Key: key,
-          }));
-        }));
 
         // LangChain - Human Message Content
         const content: Exclude<MessageContent, string> = [];
@@ -139,8 +91,8 @@ export const handler = awslambda.streamifyResponse(async ({ headers, requestCont
           });
         }
 
-        // Add the signed image urls.
-        signedImageUrls.forEach((url: string) => {
+        // Add the image urls.
+        imageUrls.forEach((url: string) => {
           content.push({
             type: 'image_url',
             image_url: {
@@ -161,19 +113,16 @@ export const handler = awslambda.streamifyResponse(async ({ headers, requestCont
           }),
         ]);
 
-        // LangChain - DynamoDB Chat Message History
-        const chatHistory = new DynamoDBChatMessageHistory({
-          tableName: process.env.APP_TABLE_NAME,
-          sessionId,
-          partitionKey: 'id',
-        });
-
         // LangChain - Buffer Window Memory
         const memory = new BufferWindowMemory({
-          chatHistory,
           returnMessages: true,
           k: 3,
         });
+
+        // LangChain - Buffer Window Memory
+        await Promise.all(history.map(({ type, text }: { type: 'ai' | 'human', text: string }) => {
+          return memory.chatHistory[type === 'ai' ? 'addAIChatMessage' : 'addUserMessage'](text);
+        }));
 
         // LangChain - LLM Chain
         const chain = new LLMChain({
@@ -183,7 +132,7 @@ export const handler = awslambda.streamifyResponse(async ({ headers, requestCont
         });
 
         // Run a chain.
-        await chain.invoke({ input: JSON.stringify(content) }, {
+        await chain.invoke({ input }, {
           callbacks: [
             {
               handleLLMNewToken(token: string) {
@@ -260,20 +209,17 @@ export const handler = awslambda.streamifyResponse(async ({ headers, requestCont
           prompt,
         });
 
-        // LangChain - DynamoDB Chat Message History
-        const chatHistory = new DynamoDBChatMessageHistory({
-          tableName: process.env.APP_TABLE_NAME,
-          sessionId,
-          partitionKey: 'id',
-        });
-
         // LangChain - Buffer Window Memory
         const memory = new BufferWindowMemory({
-          chatHistory,
           returnMessages: true,
           outputKey: 'output',
           k: 3,
         });
+
+        // LangChain - Buffer Window Memory
+        await Promise.all(history.map(({ type, text }: { type: 'ai' | 'human', text: string }) => {
+          return memory.chatHistory[type === 'ai' ? 'addAIChatMessage' : 'addUserMessage'](text);
+        }));
 
         // LangChain - Agent Executor
         const executor = AgentExecutor.fromAgentAndTools({
