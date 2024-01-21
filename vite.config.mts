@@ -20,7 +20,6 @@ export default defineConfig({
           title: 'Seeds GPT',
         },
       },
-      viteNext: true,
     }),
     vue({
       template: {
