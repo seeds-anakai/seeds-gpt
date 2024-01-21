@@ -321,6 +321,10 @@ const resize = (size: { width: number, height: number }) => {
   max-width: calc(100% - 56px);
 }
 
+.body--dark .q-spinner {
+  color: #f5f5f5;
+}
+
 :deep(.q-markdown) {
   line-height: 1.5;
 
