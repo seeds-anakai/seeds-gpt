@@ -8,7 +8,6 @@ import {
   aws_certificatemanager as acm,
   aws_cloudfront as cloudfront,
   aws_cloudfront_origins as origins,
-  aws_dynamodb as dynamodb,
   aws_iam as iam,
   aws_lambda as lambda,
   aws_lambda_nodejs as nodejs,
@@ -83,32 +82,6 @@ class SeedsGptStack extends Stack {
     new CfnOutput(this, 'ApiEndpoint', {
       value: apiEndpoint,
     });
-
-    // App Table
-    const appTable = new dynamodb.Table(this, 'AppTable', {
-      partitionKey: {
-        name: 'id',
-        type: dynamodb.AttributeType.STRING,
-      },
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-    });
-
-    // Add environment variable for access App Table.
-    api.addEnvironment('APP_TABLE_NAME', appTable.tableName);
-
-    // Add permissions to access App Table.
-    appTable.grantReadWriteData(api);
-
-    // File Bucket
-    const fileBucket = new s3.Bucket(this, 'FileBucket', {
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-    });
-
-    // Add environment variable for access File Bucket.
-    api.addEnvironment('FILE_BUCKET_NAME', fileBucket.bucketName);
-
-    // Add permissions to access File Bucket.
-    fileBucket.grantReadWrite(api);
 
     // App Bucket
     const appBucket = new s3.Bucket(this, 'AppBucket', {

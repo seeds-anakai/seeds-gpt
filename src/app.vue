@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 // Vue.js
-import { computed, ref, watchEffect } from 'vue';
+import { computed, ref, watch, watchEffect } from 'vue';
 
 // Page Store
 import { usePageStore } from '@/stores/page';
 
 // Quasar
-import { QFile, scroll, uid, useQuasar } from 'quasar';
+import { QFile, scroll, useQuasar } from 'quasar';
 
 // get the page store
 const page = usePageStore();
@@ -23,9 +23,6 @@ watchEffect(() => (page.dark = $q.dark.mode));
 // username and password
 const username = import.meta.env.VITE_BASIC_AUTH_USERNAME;
 const password = import.meta.env.VITE_BASIC_AUTH_PASSWORD;
-
-// session id
-const sessionId = uid();
 
 // is recognizing
 const isRecognizing = ref(false);
@@ -82,6 +79,21 @@ const messagesWithAttrs = computed(() => messages.value.map(({ isLoading, text, 
   }
 }));
 
+// history
+const history = computed(() => messages.value.map(({ text, type }) => {
+  if (type === 'sent') {
+    return {
+      type: 'human',
+      text,
+    };
+  } else {
+    return {
+      type: "ai",
+      text,
+    };
+  }
+}));
+
 // loading message
 const loadingMessage = computed(() => messages.value.find(({ isLoading }) => isLoading));
 
@@ -92,44 +104,30 @@ const file = ref<QFile>();
 const message = ref('');
 
 // images
-const images = ref<File[]>([]);
-
-// images with url
-const imagesWithUrl = ref<(File & { url: string })[]>([]);
+const images = ref<(File & { url?: string })[]>([]);
 
 // watch images
-watchEffect(async () => {
-  imagesWithUrl.value = await Promise.all(images.value.map((image) => {
-    return new Promise<File & { url: string }>((resolve, reject) => {
-      const reader = new FileReader();
+watch(images, (newImages, oldImages) => {
+  newImages.filter(({ url }) => typeof url === 'undefined').forEach((image) => {
+    Object.assign(image, { url: URL.createObjectURL(image) });
+  });
 
-      reader.addEventListener('load', ({ target }) => {
-        if (typeof target?.result === 'string') {
-          resolve(Object.assign(image, {
-            url: target.result,
-          }));
-        } else {
-          reject();
-        }
-      });
-
-      reader.readAsDataURL(image);
-    });
-  }));
+  oldImages.filter((image) => !newImages.includes(image)).forEach(({ url }) => {
+    if (url) {
+      URL.revokeObjectURL(url);
+    }
+  });
 });
 
 // send message
-const sendMessage = async (text: string, imageUrls: string[]) => {
-  // reset message
-  message.value = '';
-
-  // reset images
-  images.value = [];
+const sendMessage = async (input: string, images: (File & { url?: string })[], history: { type: string, text: string }[]) => {
+  // text
+  const text = [input, ...images.map(({ url }, i) => `![${i}](${url})`)].filter(Boolean).join('\n\n');
 
   // my message
   messages.value.push({
     type: 'sent',
-    text: [text, ...imageUrls.map((url, i) => `![${i}](${url})`)].join('\n\n'),
+    text,
     isLoading: false,
   });
 
@@ -145,6 +143,22 @@ const sendMessage = async (text: string, imageUrls: string[]) => {
     recognition.stop();
   }
 
+  // image data urls
+  const imageUrls = await Promise.all(images.map((image) => {
+    return new Promise<string>((resolve) => {
+      const reader = new FileReader();
+
+      reader.addEventListener('load', () => {
+        resolve(String(reader.result));
+      });
+
+      reader.readAsDataURL(image);
+    });
+  }));
+
+  // reset input
+  resetInput();
+
   // send message
   const { body } = await fetch(import.meta.env.VITE_API_ENDPOINT, {
     method: 'POST',
@@ -152,9 +166,9 @@ const sendMessage = async (text: string, imageUrls: string[]) => {
       'authorization': `Basic ${btoa(`${username}:${password}`)}`,
     },
     body: JSON.stringify({
-      input: text,
+      input,
       imageUrls,
-      sessionId,
+      history,
     }),
   });
 
@@ -175,6 +189,15 @@ const sendMessage = async (text: string, imageUrls: string[]) => {
       loadingMessage.value.isLoading = false;
     }
   }
+};
+
+// reset input
+const resetInput = () => {
+  // reset message
+  message.value = '';
+
+  // reset images
+  images.value = [];
 };
 
 // resize
@@ -243,7 +266,7 @@ const resize = (size: { width: number, height: number }) => {
     </q-page-container>
     <q-footer class="q-py-md" :style="{ backgroundColor: $q.dark.isActive ? 'var(--q-dark-page)' : 'white' }">
       <div class="images row q-gutter-sm q-mx-auto q-px-md">
-        <div v-for="image in imagesWithUrl" class="relative-position" :key="image.name">
+        <div v-for="image in images" class="relative-position" :key="image.name">
           <q-img height="56px" img-class="rounded-borders" :src="image.url" width="56px" />
           <q-btn class="absolute" dense flat round style="top: -16px; right: -16px;" @click="file?.removeFile?.(image)">
             <q-icon name="mdi-close" />
@@ -251,7 +274,7 @@ const resize = (size: { width: number, height: number }) => {
         </div>
       </div>
       <q-file ref="file" v-model="images" class="hidden" accept="image/*" append multiple />
-      <q-input v-model="message" class="q-mx-auto q-px-md" dense placeholder="Send a message..." @keydown="$event.keyCode === 13 && !((!/\S/.test(message) && images.length === 0) || !!loadingMessage) && sendMessage(message, imagesWithUrl.map(({ url }) => url))">
+      <q-input v-model="message" class="q-mx-auto q-px-md" dense placeholder="Send a message..." @keydown="$event.keyCode === 13 && !((!/\S/.test(message) && images.length === 0) || !!loadingMessage) && sendMessage(message, images, history)">
         <template #prepend>
           <q-btn dense flat round @click="file?.pickFiles?.($event)">
             <q-icon name="mdi-paperclip" />
@@ -268,7 +291,7 @@ const resize = (size: { width: number, height: number }) => {
           </q-btn>
         </template>
         <template #after>
-          <q-btn dense :disable="(!/\S/.test(message) && images.length === 0) || !!loadingMessage" flat round @click="sendMessage(message, imagesWithUrl.map(({ url }) => url))">
+          <q-btn dense :disable="(!/\S/.test(message) && images.length === 0) || !!loadingMessage" flat round @click="sendMessage(message, images, history)">
             <q-icon name="mdi-send" />
           </q-btn>
         </template>
