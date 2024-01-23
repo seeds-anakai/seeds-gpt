@@ -230,7 +230,7 @@ const resize = (size: { width: number, height: number }) => {
       </q-toolbar>
     </q-header>
     <q-page-container>
-      <q-page class="q-pt-md" padding>
+      <q-page class="q-pt-md q-pb-sm" padding>
         <q-card class="q-mx-auto bg-transparent" flat>
           <template v-for="{ bgColor, icon, isLoading, name, sent, text, type } in messagesWithAttrs">
             <q-chat-message :bg-color="bgColor" :name="name" :sent="sent">
