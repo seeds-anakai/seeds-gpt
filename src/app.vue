@@ -71,7 +71,7 @@ const messagesWithAttrs = computed(() => messages.value.map(({ isLoading, text, 
       bgColor: $q.dark.isActive ? 'grey-9' : 'grey-4',
       icon: 'mdi-robot',
       isLoading,
-      name: "Mallows GPT",
+      name: 'Mallows GPT',
       sent: false,
       text,
       type,
@@ -88,7 +88,7 @@ const history = computed(() => messages.value.map(({ text, type }) => {
     };
   } else {
     return {
-      type: "ai",
+      type: 'ai',
       text,
     };
   }
