@@ -4,7 +4,7 @@
     "serve": "vite serve"
   },
   "devDependencies": {
-    "@langchain/openai": "^0.0.12",
+    "@langchain/openai": "^0.0.33",
     "@quasar/quasar-ui-qmarkdown": "^2.0.0-beta.10",
     "@quasar/vite-plugin": "^1.6.0",
     "@types/aws-lambda": "^8.10.131",
@@ -16,8 +16,8 @@
     "axios": "^1.6.5",
     "cheerio": "^1.0.0-rc.12",
     "constructs": "^10.3.0",
-    "langchain": "^0.1.4",
-    "openai": "^4.24.7",
+    "langchain": "^0.2.2",
+    "openai": "^4.47.1",
     "pinia": "^2.1.7",
     "pinia-plugin-persistedstate": "^3.2.1",
     "postcss": "^8.4.33",
